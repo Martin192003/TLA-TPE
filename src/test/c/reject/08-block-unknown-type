@@ -1,0 +1,4 @@
+# "Slide con tipo de bloque inválido"
+@block tipo=danger "Título"
+Contenido con tipo de bloque desconocido
+@end

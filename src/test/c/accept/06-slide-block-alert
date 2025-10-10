@@ -1,0 +1,4 @@
+# "Teoría de Autómatas"
+@block tipo=alert "Autómatas Finitos"
+Los autómatas finitos son modelos matemáticos fundamentales en la teoría de la computación.
+@end

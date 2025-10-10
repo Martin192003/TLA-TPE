@@ -1,0 +1,4 @@
+# "Ejemplos Prácticos"
+@block tipo=example
+Consideremos una máquina expendedora que acepta monedas de 25 y 50 centavos.
+@end

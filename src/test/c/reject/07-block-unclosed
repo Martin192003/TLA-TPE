@@ -1,0 +1,3 @@
+# "Slide con bloque sin cerrar"
+@block tipo=alert "Título"
+Contenido del bloque sin cierre

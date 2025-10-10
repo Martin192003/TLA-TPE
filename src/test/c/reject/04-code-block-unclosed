@@ -1,0 +1,5 @@
+# "Código mal formado"
+@code
+function test() {
+    return "sin cierre";
+}
