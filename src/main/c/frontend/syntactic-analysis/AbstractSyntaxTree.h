@@ -9,70 +9,110 @@
 ModuleDestructor initializeAbstractSyntaxTreeModule();
 
 /**
- * This type definitions allows self-referencing types (e.g., an expression
- * that is made of another expressions, such as talking about you in 3rd
- * person, but without the madness).
+ * Type definitions for the presentation language AST.
  */
 
-typedef enum ExpressionType ExpressionType;
-typedef enum FactorType FactorType;
+typedef enum SlideItemType SlideItemType;
+typedef enum BlockType BlockType;
 
-typedef struct Constant Constant;
-typedef struct Expression Expression;
-typedef struct Factor Factor;
+typedef struct Text Text;
+typedef struct Image Image;
+typedef struct CodeBlock CodeBlock;
+typedef struct Note Note;
+typedef struct Block Block;
+typedef struct SlideItem SlideItem;
+typedef struct SlideItemList SlideItemList;
+typedef struct Slide Slide;
+typedef struct SlideList SlideList;
 typedef struct Program Program;
 
 /**
  * Node types for the Abstract Syntax Tree (AST).
  */
 
-enum ExpressionType {
-	ADDITION,
-	DIVISION,
-	FACTOR,
-	MULTIPLICATION,
-	SUBTRACTION
+enum SlideItemType {
+	SLIDE_ITEM_TEXT,
+	SLIDE_ITEM_IMAGE,
+	SLIDE_ITEM_CODE,
+	SLIDE_ITEM_NOTE,
+	SLIDE_ITEM_BLOCK
 };
 
-enum FactorType {
-	CONSTANT,
-	EXPRESSION
+enum BlockType {
+	BLOCK_NORMAL,
+	BLOCK_ALERT,
+	BLOCK_EXAMPLE
 };
 
-struct Constant {
-	int value;
+struct Text {
+	char * content;
 };
 
-struct Factor {
+struct Image {
+	char * path;
+	char * caption;
+};
+
+struct CodeBlock {
+	char * content;
+};
+
+struct Note {
+	char * content;
+};
+
+struct Block {
+	BlockType type;
+	char * title;  // Can be NULL for blocks without title
+	char * content;
+};
+
+struct SlideItem {
 	union {
-		Constant * constant;
-		Expression * expression;
+		Text * text;
+		Image * image;
+		CodeBlock * codeBlock;
+		Note * note;
+		Block * block;
 	};
-	FactorType type;
+	SlideItemType type;
+	SlideItem * next;
 };
 
-struct Expression {
-	union {
-		Factor * factor;
-		struct {
-			Expression * leftExpression;
-			Expression * rightExpression;
-		};
-	};
-	ExpressionType type;
+struct SlideItemList {
+	SlideItem * first;
+	SlideItem * last;
+};
+
+struct Slide {
+	char * title;
+	char * subtitle;  // Can be NULL for slides without subtitle
+	SlideItemList * items;
+	Slide * next;
+};
+
+struct SlideList {
+	Slide * first;
+	Slide * last;
 };
 
 struct Program {
-	Expression * expression;
+	SlideList * slides;
 };
 
 /**
- * Node recursive super-duper-trambolik-destructors.
+ * Node recursive destructors.
  */
 
-void destroyConstant(Constant * constant);
-void destroyExpression(Expression * expression);
-void destroyFactor(Factor * factor);
+void destroyText(Text * text);
+void destroyImage(Image * image);
+void destroyCodeBlock(CodeBlock * codeBlock);
+void destroyNote(Note * note);
+void destroyBlock(Block * block);
+void destroySlideItem(SlideItem * slideItem);
+void destroySlideItemList(SlideItemList * slideItemList);
+void destroySlide(Slide * slide);
+void destroySlideList(SlideList * slideList);
 void destroyProgram(Program * program);
 
 #endif

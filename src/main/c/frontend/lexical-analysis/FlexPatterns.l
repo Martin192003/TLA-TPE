@@ -14,16 +14,24 @@
  * @see https://westes.github.io/flex/manual/Definitions-Section.html#Definitions-Section
  */
 
-extern CompilationStatus ArithmeticOperatorLexemeAction(TokenLabel label);
-extern CompilationStatus EnterImportExpressionLexemeAction(FlexContext context);
+extern CompilationStatus HashLexemeAction();
+extern CompilationStatus DoubleHashLexemeAction();
+extern CompilationStatus MinusLexemeAction();
+extern CompilationStatus TripleMinusLexemeAction();
+extern CompilationStatus AtImgLexemeAction();
+extern CompilationStatus AtCodeLexemeAction();
+extern CompilationStatus AtEndLexemeAction();
+extern CompilationStatus AtNoteLexemeAction();
+extern CompilationStatus AtBlockLexemeAction();
+extern CompilationStatus TipoEqualsLexemeAction();
+extern CompilationStatus BlockTypeLexemeAction(TokenLabel label);
+extern CompilationStatus StringLexemeAction();
+extern CompilationStatus TextContentLexemeAction();
+extern CompilationStatus CodeContentLexemeAction();
 extern CompilationStatus EnterMultilineCommentLexemeAction(FlexContext context);
+extern CompilationStatus LeaveMultilineCommentLexemeAction();
 extern CompilationStatus EOFLexemeAction();
 extern CompilationStatus IgnoredLexemeAction();
-extern CompilationStatus IntegerLexemeAction();
-extern CompilationStatus LeaveImportExpressionLexemeAction();
-extern CompilationStatus LeaveMultilineCommentLexemeAction();
-extern CompilationStatus ParenthesisLexemeAction(TokenLabel label);
-extern CompilationStatus SubexpressionLexemeAction();
 extern CompilationStatus UnknownLexemeAction();
 
 %}
@@ -33,8 +41,10 @@ extern CompilationStatus UnknownLexemeAction();
  *
  * @see https://westes.github.io/flex/manual/Start-Conditions.html
  */
-%x IMPORT_EXPRESSION
 %x MULTILINE_COMMENT
+%x CODE_BLOCK
+%x TEXT_LINE
+%x BLOCK_CONTENT
 
 /**
  * Reusable patterns.
@@ -43,6 +53,8 @@ extern CompilationStatus UnknownLexemeAction();
  * @see https://westes.github.io/flex/manual/Patterns.html
  */
 whitespace			[[:space:]]+
+string				\"[^\"]*\"
+text_content		[^\n\r]+
 
 %%
 
@@ -54,27 +66,40 @@ whitespace			[[:space:]]+
 
 %}
 
-"{"									{ return EnterImportExpressionLexemeAction(IMPORT_EXPRESSION); }
-<IMPORT_EXPRESSION>[^{}]+			{ return SubexpressionLexemeAction(); }
-<IMPORT_EXPRESSION>"}"				{ return LeaveImportExpressionLexemeAction(); }
-<IMPORT_EXPRESSION>.				{ return UnknownLexemeAction(); }
-
 "/*"								{ return EnterMultilineCommentLexemeAction(MULTILINE_COMMENT); }
 <MULTILINE_COMMENT>"*/"				{ return LeaveMultilineCommentLexemeAction(); }
 <MULTILINE_COMMENT>[^*]+			{ return IgnoredLexemeAction(); }
 <MULTILINE_COMMENT>.				{ return IgnoredLexemeAction(); }
 
-"-"									{ return ArithmeticOperatorLexemeAction(SUB); }
-"*"									{ return ArithmeticOperatorLexemeAction(MUL); }
-"/"									{ return ArithmeticOperatorLexemeAction(DIV); }
-"+"									{ return ArithmeticOperatorLexemeAction(ADD); }
+"## "								{ return DoubleHashLexemeAction(); }
+"# "								{ return HashLexemeAction(); }
 
-"("									{ return ParenthesisLexemeAction(OPEN_PARENTHESIS); }
-")"									{ return ParenthesisLexemeAction(CLOSE_PARENTHESIS); }
+"---"								{ return TripleMinusLexemeAction(); }
+"- "								{ BEGIN(TEXT_LINE); return MinusLexemeAction(); }
+<TEXT_LINE>{text_content}			{ BEGIN(INITIAL); return TextContentLexemeAction(); }
+<TEXT_LINE>[\n\r]					{ BEGIN(INITIAL); return IgnoredLexemeAction(); }
 
-[[:digit:]]+						{ return IntegerLexemeAction(); }
+"@img"								{ return AtImgLexemeAction(); }
+"@code"								{ BEGIN(CODE_BLOCK); return AtCodeLexemeAction(); }
+<CODE_BLOCK>"@end"					{ BEGIN(INITIAL); return AtEndLexemeAction(); }
+<CODE_BLOCK>[^@]+					{ return CodeContentLexemeAction(); }
+<CODE_BLOCK>"@"[^e]					{ return CodeContentLexemeAction(); }
+<CODE_BLOCK>"@e"[^n]				{ return CodeContentLexemeAction(); }
+<CODE_BLOCK>"@en"[^d]				{ return CodeContentLexemeAction(); }
+
+"@note"								{ return AtNoteLexemeAction(); }
+"@block"							{ return AtBlockLexemeAction(); }
+"@end"								{ return AtEndLexemeAction(); }
+
+"tipo="								{ return TipoEqualsLexemeAction(); }
+"normal"							{ return BlockTypeLexemeAction(NORMAL); }
+"alert"								{ return BlockTypeLexemeAction(ALERT); }
+"example"							{ return BlockTypeLexemeAction(EXAMPLE); }
+
+{string}							{ return StringLexemeAction(); }
 
 {whitespace}						{ return IgnoredLexemeAction(); }
+[A-Z][A-Za-z ][^\n\r]*				{ return TextContentLexemeAction(); }
 .									{ return UnknownLexemeAction(); }
 
 <<EOF>>								{ return EOFLexemeAction(); }

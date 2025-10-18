@@ -13,14 +13,36 @@
 ModuleDestructor initializeBisonActionsModule();
 
 /**
- * Bison semantic actions.
+ * Bison semantic actions for presentation language.
  */
 
-Constant * IntegerConstantSemanticAction(const int value);
-Expression * ArithmeticExpressionSemanticAction(Expression * leftExpression, Expression * rightExpression, ExpressionType type);
-Expression * FactorExpressionSemanticAction(Factor * factor);
-Factor * ConstantFactorSemanticAction(Constant * constant);
-Factor * ExpressionFactorSemanticAction(Expression * expression);
-Program * ExpressionProgramSemanticAction(Expression * expression);
+// Text and content actions
+Text * TextSemanticAction(char * content);
+Image * ImageSemanticAction(char * path, char * caption);
+CodeBlock * CodeBlockSemanticAction(char * content);
+Note * NoteSemanticAction(char * content);
+Block * BlockSemanticAction(BlockType type, char * title, char * content);
+
+// Slide item actions
+SlideItem * TextSlideItemSemanticAction(Text * text);
+SlideItem * ImageSlideItemSemanticAction(Image * image);
+SlideItem * CodeSlideItemSemanticAction(CodeBlock * codeBlock);
+SlideItem * NoteSlideItemSemanticAction(Note * note);
+SlideItem * BlockSlideItemSemanticAction(Block * block);
+
+// List actions
+SlideItemList * EmptySlideItemListSemanticAction();
+SlideItemList * SlideItemListSemanticAction(SlideItemList * list, SlideItem * item);
+
+// Slide actions
+Slide * SlideSemanticAction(char * title, char * subtitle, SlideItemList * items);
+Slide * SimpleSlideSemanticAction(char * title, SlideItemList * items);
+
+// Slide list actions
+SlideList * EmptySlideListSemanticAction();
+SlideList * SlideListSemanticAction(SlideList * list, Slide * slide);
+
+// Program action
+Program * ProgramSemanticAction(SlideList * slides);
 
 #endif
