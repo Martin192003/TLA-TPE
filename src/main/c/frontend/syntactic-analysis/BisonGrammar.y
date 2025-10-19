@@ -67,6 +67,7 @@ void yyerror(const YYLTYPE * location, const char * message) {}
 %token <token> HASH
 %token <token> DOUBLE_HASH
 %token <token> MINUS
+%token <token> NUMBERED_LIST
 %token <token> TRIPLE_MINUS
 %token <token> AT_IMG
 %token <token> AT_CODE
@@ -110,6 +111,7 @@ slides: slide													{ $$ = EmptySlideListSemanticAction(); $$ = SlideListS
 
 slide: HASH STRING slideItems									{ $$ = SimpleSlideSemanticAction($2, $3); }
 	| HASH STRING DOUBLE_HASH STRING slideItems				{ $$ = SlideSemanticAction($2, $4, $5); }
+	| slideItems												{ $$ = SlideWithoutTitleSemanticAction($1); }
 	;
 
 slideItems: %empty												{ $$ = EmptySlideItemListSemanticAction(); }
@@ -124,9 +126,11 @@ slideItem: text													{ $$ = TextSlideItemSemanticAction($1); }
 	;
 
 text: MINUS TEXT_CONTENT										{ $$ = TextSemanticAction($2); }
+	| NUMBERED_LIST TEXT_CONTENT								{ $$ = TextSemanticAction($2); }
 	;
 
 image: AT_IMG STRING STRING										{ $$ = ImageSemanticAction($2, $3); }
+	| AT_IMG STRING STRING STRING								{ $$ = ImageWithLegendSemanticAction($2, $3, $4); }
 	;
 
 codeBlock: AT_CODE CODE_CONTENT AT_END							{ $$ = CodeBlockSemanticAction($2); }

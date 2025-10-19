@@ -1,0 +1,6 @@
+# "Presentación Multimedia"
+- Imagen simple:
+@img "simple.png" "Una imagen básica"
+1. Imagen con leyenda detallada:
+@img "complejo.jpg" "Análisis de datos" "Tabla 2: Comparación de resultados entre metodología A y B durante el período 2023-2024"
+- Más contenido después de imágenes

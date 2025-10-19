@@ -19,6 +19,7 @@ ModuleDestructor initializeBisonActionsModule();
 // Text and content actions
 Text * TextSemanticAction(char * content);
 Image * ImageSemanticAction(char * path, char * caption);
+Image * ImageWithLegendSemanticAction(char * path, char * caption, char * legend);
 CodeBlock * CodeBlockSemanticAction(char * content);
 Note * NoteSemanticAction(char * content);
 Block * BlockSemanticAction(BlockType type, char * title, char * content);
@@ -37,6 +38,7 @@ SlideItemList * SlideItemListSemanticAction(SlideItemList * list, SlideItem * it
 // Slide actions
 Slide * SlideSemanticAction(char * title, char * subtitle, SlideItemList * items);
 Slide * SimpleSlideSemanticAction(char * title, SlideItemList * items);
+Slide * SlideWithoutTitleSemanticAction(SlideItemList * items);
 
 // Slide list actions
 SlideList * EmptySlideListSemanticAction();

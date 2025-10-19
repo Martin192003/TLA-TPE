@@ -17,6 +17,7 @@
 extern CompilationStatus HashLexemeAction();
 extern CompilationStatus DoubleHashLexemeAction();
 extern CompilationStatus MinusLexemeAction();
+extern CompilationStatus NumberedListLexemeAction();
 extern CompilationStatus TripleMinusLexemeAction();
 extern CompilationStatus AtImgLexemeAction();
 extern CompilationStatus AtCodeLexemeAction();
@@ -76,6 +77,7 @@ text_content		[^\n\r]+
 
 "---"								{ return TripleMinusLexemeAction(); }
 "- "								{ BEGIN(TEXT_LINE); return MinusLexemeAction(); }
+[0-9]+". "							{ BEGIN(TEXT_LINE); return NumberedListLexemeAction(); }
 <TEXT_LINE>{text_content}			{ BEGIN(INITIAL); return TextContentLexemeAction(); }
 <TEXT_LINE>[\n\r]					{ BEGIN(INITIAL); return IgnoredLexemeAction(); }
 

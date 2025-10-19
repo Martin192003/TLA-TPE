@@ -51,6 +51,7 @@ struct Text {
 struct Image {
 	char * path;
 	char * caption;
+	char * legend;    // Optional legend/footer text
 };
 
 struct CodeBlock {

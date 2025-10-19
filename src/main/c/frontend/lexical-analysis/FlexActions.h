@@ -19,6 +19,7 @@ ModuleDestructor initializeFlexActionsModule(LexicalAnalyzer * lexicalAnalyzer);
 CompilationStatus HashLexemeAction();
 CompilationStatus DoubleHashLexemeAction();
 CompilationStatus MinusLexemeAction();
+CompilationStatus NumberedListLexemeAction();
 CompilationStatus TripleMinusLexemeAction();
 CompilationStatus AtImgLexemeAction();
 CompilationStatus AtCodeLexemeAction();

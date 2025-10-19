@@ -40,6 +40,9 @@ void destroyImage(Image * image) {
 		if (image->caption != NULL) {
 			free(image->caption);
 		}
+		if (image->legend != NULL) {
+			free(image->legend);
+		}
 		free(image);
 	}
 }

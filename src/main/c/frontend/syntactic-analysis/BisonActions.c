@@ -89,6 +89,16 @@ Image * ImageSemanticAction(char * path, char * caption) {
 	Image * image = calloc(1, sizeof(Image));
 	image->path = _removeQuotes(path);
 	image->caption = _removeQuotes(caption);
+	image->legend = NULL;  // No legend in basic image
+	return image;
+}
+
+Image * ImageWithLegendSemanticAction(char * path, char * caption, char * legend) {
+	_logSyntacticAnalyzerAction(__FUNCTION__);
+	Image * image = calloc(1, sizeof(Image));
+	image->path = _removeQuotes(path);
+	image->caption = _removeQuotes(caption);
+	image->legend = _removeQuotes(legend);
 	return image;
 }
 
@@ -194,6 +204,16 @@ Slide * SimpleSlideSemanticAction(char * title, SlideItemList * items) {
 	_logSyntacticAnalyzerAction(__FUNCTION__);
 	Slide * slide = calloc(1, sizeof(Slide));
 	slide->title = _removeQuotes(title);
+	slide->subtitle = NULL;
+	slide->items = items;
+	slide->next = NULL;
+	return slide;
+}
+
+Slide * SlideWithoutTitleSemanticAction(SlideItemList * items) {
+	_logSyntacticAnalyzerAction(__FUNCTION__);
+	Slide * slide = calloc(1, sizeof(Slide));
+	slide->title = NULL;
 	slide->subtitle = NULL;
 	slide->items = items;
 	slide->next = NULL;

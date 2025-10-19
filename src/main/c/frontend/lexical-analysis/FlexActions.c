@@ -76,6 +76,14 @@ CompilationStatus MinusLexemeAction() {
 	return status;
 }
 
+CompilationStatus NumberedListLexemeAction() {
+	Token * token = createToken(_lexicalAnalyzer, NUMBERED_LIST);
+	_logTokenAction(__FUNCTION__, token);
+	CompilationStatus status = pushToken(_lexicalAnalyzer, token);
+	destroyToken(token);
+	return status;
+}
+
 CompilationStatus TripleMinusLexemeAction() {
 	Token * token = createToken(_lexicalAnalyzer, TRIPLE_MINUS);
 	_logTokenAction(__FUNCTION__, token);
