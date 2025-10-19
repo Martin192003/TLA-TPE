@@ -20,6 +20,7 @@ typedef struct Image Image;
 typedef struct CodeBlock CodeBlock;
 typedef struct Note Note;
 typedef struct Block Block;
+typedef struct Link Link;
 typedef struct SlideItem SlideItem;
 typedef struct SlideItemList SlideItemList;
 typedef struct Slide Slide;
@@ -35,7 +36,8 @@ enum SlideItemType {
 	SLIDE_ITEM_IMAGE,
 	SLIDE_ITEM_CODE,
 	SLIDE_ITEM_NOTE,
-	SLIDE_ITEM_BLOCK
+	SLIDE_ITEM_BLOCK,
+	SLIDE_ITEM_LINK
 };
 
 enum BlockType {
@@ -51,7 +53,7 @@ struct Text {
 struct Image {
 	char * path;
 	char * caption;
-	char * legend;    // Optional legend/footer text
+	char * legend;
 };
 
 struct CodeBlock {
@@ -64,8 +66,13 @@ struct Note {
 
 struct Block {
 	BlockType type;
-	char * title;  // Can be NULL for blocks without title
+	char * title;
 	char * content;
+};
+
+struct Link {
+	char * text;
+	char * target;
 };
 
 struct SlideItem {
@@ -75,6 +82,7 @@ struct SlideItem {
 		CodeBlock * codeBlock;
 		Note * note;
 		Block * block;
+		Link * link;
 	};
 	SlideItemType type;
 	SlideItem * next;
@@ -87,7 +95,8 @@ struct SlideItemList {
 
 struct Slide {
 	char * title;
-	char * subtitle;  // Can be NULL for slides without subtitle
+	char * subtitle;
+	char * id;
 	SlideItemList * items;
 	Slide * next;
 };
@@ -110,6 +119,7 @@ void destroyImage(Image * image);
 void destroyCodeBlock(CodeBlock * codeBlock);
 void destroyNote(Note * note);
 void destroyBlock(Block * block);
+void destroyLink(Link * link);
 void destroySlideItem(SlideItem * slideItem);
 void destroySlideItemList(SlideItemList * slideItemList);
 void destroySlide(Slide * slide);

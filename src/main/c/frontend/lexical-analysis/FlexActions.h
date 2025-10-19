@@ -15,7 +15,6 @@
 /** Initialize module's internal state. */
 ModuleDestructor initializeFlexActionsModule(LexicalAnalyzer * lexicalAnalyzer);
 
-/** Lexical actions for presentation language. */
 CompilationStatus HashLexemeAction();
 CompilationStatus DoubleHashLexemeAction();
 CompilationStatus MinusLexemeAction();
@@ -26,6 +25,8 @@ CompilationStatus AtCodeLexemeAction();
 CompilationStatus AtEndLexemeAction();
 CompilationStatus AtNoteLexemeAction();
 CompilationStatus AtBlockLexemeAction();
+CompilationStatus AtLinkLexemeAction();
+CompilationStatus AtIdLexemeAction();
 CompilationStatus TipoEqualsLexemeAction();
 CompilationStatus BlockTypeLexemeAction(TokenLabel label);
 CompilationStatus StringLexemeAction();

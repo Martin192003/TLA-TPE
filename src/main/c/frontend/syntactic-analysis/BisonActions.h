@@ -23,6 +23,7 @@ Image * ImageWithLegendSemanticAction(char * path, char * caption, char * legend
 CodeBlock * CodeBlockSemanticAction(char * content);
 Note * NoteSemanticAction(char * content);
 Block * BlockSemanticAction(BlockType type, char * title, char * content);
+Link * LinkSemanticAction(char * text, char * target);
 
 // Slide item actions
 SlideItem * TextSlideItemSemanticAction(Text * text);
@@ -30,6 +31,7 @@ SlideItem * ImageSlideItemSemanticAction(Image * image);
 SlideItem * CodeSlideItemSemanticAction(CodeBlock * codeBlock);
 SlideItem * NoteSlideItemSemanticAction(Note * note);
 SlideItem * BlockSlideItemSemanticAction(Block * block);
+SlideItem * LinkSlideItemSemanticAction(Link * link);
 
 // List actions
 SlideItemList * EmptySlideItemListSemanticAction();
@@ -39,6 +41,8 @@ SlideItemList * SlideItemListSemanticAction(SlideItemList * list, SlideItem * it
 Slide * SlideSemanticAction(char * title, char * subtitle, SlideItemList * items);
 Slide * SimpleSlideSemanticAction(char * title, SlideItemList * items);
 Slide * SlideWithoutTitleSemanticAction(SlideItemList * items);
+Slide * SlideWithIdSemanticAction(char * title, char * id, SlideItemList * items);
+Slide * SlideWithSubtitleAndIdSemanticAction(char * title, char * subtitle, char * id, SlideItemList * items);
 
 // Slide list actions
 SlideList * EmptySlideListSemanticAction();

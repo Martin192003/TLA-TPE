@@ -80,6 +80,19 @@ void destroyBlock(Block * block) {
 	}
 }
 
+void destroyLink(Link * link) {
+	logDebugging(_logger, "Executing destructor: %s", __FUNCTION__);
+	if (link != NULL) {
+		if (link->text != NULL) {
+			free(link->text);
+		}
+		if (link->target != NULL) {
+			free(link->target);
+		}
+		free(link);
+	}
+}
+
 void destroySlideItem(SlideItem * slideItem) {
 	logDebugging(_logger, "Executing destructor: %s", __FUNCTION__);
 	if (slideItem != NULL) {
@@ -98,6 +111,9 @@ void destroySlideItem(SlideItem * slideItem) {
 				break;
 			case SLIDE_ITEM_BLOCK:
 				destroyBlock(slideItem->block);
+				break;
+			case SLIDE_ITEM_LINK:
+				destroyLink(slideItem->link);
 				break;
 		}
 		free(slideItem);
@@ -125,6 +141,9 @@ void destroySlide(Slide * slide) {
 		}
 		if (slide->subtitle != NULL) {
 			free(slide->subtitle);
+		}
+		if (slide->id != NULL) {
+			free(slide->id);
 		}
 		destroySlideItemList(slide->items);
 		free(slide);

@@ -1,0 +1,14 @@
+# "Introducción" @id "intro"
+- Bienvenidos a esta presentación.
+@link "Metodología" "Ver la metodología utilizada"
+
+---
+
+# "Metodología"
+- Esta sección explica nuestro enfoque.
+@link "intro" "Volver al inicio"
+
+---
+
+# "Conclusiones"
+@link "Metodología"

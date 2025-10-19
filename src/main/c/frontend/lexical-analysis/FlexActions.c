@@ -132,6 +132,22 @@ CompilationStatus AtBlockLexemeAction() {
 	return status;
 }
 
+CompilationStatus AtLinkLexemeAction() {
+	Token * token = createToken(_lexicalAnalyzer, AT_LINK);
+	_logTokenAction(__FUNCTION__, token);
+	CompilationStatus status = pushToken(_lexicalAnalyzer, token);
+	destroyToken(token);
+	return status;
+}
+
+CompilationStatus AtIdLexemeAction() {
+	Token * token = createToken(_lexicalAnalyzer, AT_ID);
+	_logTokenAction(__FUNCTION__, token);
+	CompilationStatus status = pushToken(_lexicalAnalyzer, token);
+	destroyToken(token);
+	return status;
+}
+
 CompilationStatus TipoEqualsLexemeAction() {
 	Token * token = createToken(_lexicalAnalyzer, TIPO_EQUALS);
 	_logTokenAction(__FUNCTION__, token);
@@ -150,11 +166,7 @@ CompilationStatus BlockTypeLexemeAction(TokenLabel label) {
 
 CompilationStatus StringLexemeAction() {
 	Token * token = createToken(_lexicalAnalyzer, STRING);
-	
-	// Make a copy of the string for the semantic value
-	// This ensures it survives after destroyToken
 	token->semanticValue->string = strdup(token->lexeme);
-	
 	_logTokenAction(__FUNCTION__, token);
 	CompilationStatus status = pushToken(_lexicalAnalyzer, token);
 	destroyToken(token);
@@ -163,7 +175,6 @@ CompilationStatus StringLexemeAction() {
 
 CompilationStatus TextContentLexemeAction() {
 	Token * token = createToken(_lexicalAnalyzer, TEXT_CONTENT);
-	// Content no longer includes "- " prefix
 	token->semanticValue->string = strdup(token->lexeme);
 	_logTokenAction(__FUNCTION__, token);
 	CompilationStatus status = pushToken(_lexicalAnalyzer, token);

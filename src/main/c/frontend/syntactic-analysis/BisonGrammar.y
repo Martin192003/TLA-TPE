@@ -34,6 +34,7 @@ void yyerror(const YYLTYPE * location, const char * message) {}
 	CodeBlock * codeBlock;
 	Note * note;
 	Block * block;
+	Link * link;
 	SlideItem * slideItem;
 	SlideItemList * slideItemList;
 	Slide * slide;
@@ -55,6 +56,7 @@ void yyerror(const YYLTYPE * location, const char * message) {}
 %destructor { destroyCodeBlock($$); } <codeBlock>
 %destructor { destroyNote($$); } <note>
 %destructor { destroyBlock($$); } <block>
+%destructor { destroyLink($$); } <link>
 %destructor { destroySlideItem($$); } <slideItem>
 %destructor { destroySlideItemList($$); } slideItems
 %destructor { destroySlide($$); } <slide>
@@ -74,6 +76,8 @@ void yyerror(const YYLTYPE * location, const char * message) {}
 %token <token> AT_END
 %token <token> AT_NOTE
 %token <token> AT_BLOCK
+%token <token> AT_LINK
+%token <token> AT_ID
 %token <token> TIPO_EQUALS
 %token <token> NORMAL
 %token <token> ALERT
@@ -90,6 +94,7 @@ void yyerror(const YYLTYPE * location, const char * message) {}
 %type <codeBlock> codeBlock
 %type <note> note
 %type <block> block
+%type <link> link
 %type <blockType> blockType
 %type <slideItem> slideItem
 %type <slideItemList> slideItems
@@ -111,6 +116,8 @@ slides: slide													{ $$ = EmptySlideListSemanticAction(); $$ = SlideListS
 
 slide: HASH STRING slideItems									{ $$ = SimpleSlideSemanticAction($2, $3); }
 	| HASH STRING DOUBLE_HASH STRING slideItems				{ $$ = SlideSemanticAction($2, $4, $5); }
+	| HASH STRING AT_ID STRING slideItems					{ $$ = SlideWithIdSemanticAction($2, $4, $5); }
+	| HASH STRING DOUBLE_HASH STRING AT_ID STRING slideItems	{ $$ = SlideWithSubtitleAndIdSemanticAction($2, $4, $6, $7); }
 	| slideItems												{ $$ = SlideWithoutTitleSemanticAction($1); }
 	;
 
@@ -123,6 +130,7 @@ slideItem: text													{ $$ = TextSlideItemSemanticAction($1); }
 	| codeBlock													{ $$ = CodeSlideItemSemanticAction($1); }
 	| note														{ $$ = NoteSlideItemSemanticAction($1); }
 	| block														{ $$ = BlockSlideItemSemanticAction($1); }
+	| link														{ $$ = LinkSlideItemSemanticAction($1); }
 	;
 
 text: MINUS TEXT_CONTENT										{ $$ = TextSemanticAction($2); }
@@ -137,6 +145,10 @@ codeBlock: AT_CODE CODE_CONTENT AT_END							{ $$ = CodeBlockSemanticAction($2);
 	;
 
 note: AT_NOTE STRING											{ $$ = NoteSemanticAction($2); }
+	;
+
+link: AT_LINK STRING											{ $$ = LinkSemanticAction($2, $2); }
+	| AT_LINK STRING STRING										{ $$ = LinkSemanticAction($2, $3); }
 	;
 
 block: AT_BLOCK TIPO_EQUALS blockType STRING TEXT_CONTENT AT_END	{ $$ = BlockSemanticAction($3, $4, $5); }

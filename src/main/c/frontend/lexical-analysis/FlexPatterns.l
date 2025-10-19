@@ -24,6 +24,8 @@ extern CompilationStatus AtCodeLexemeAction();
 extern CompilationStatus AtEndLexemeAction();
 extern CompilationStatus AtNoteLexemeAction();
 extern CompilationStatus AtBlockLexemeAction();
+extern CompilationStatus AtLinkLexemeAction();
+extern CompilationStatus AtIdLexemeAction();
 extern CompilationStatus TipoEqualsLexemeAction();
 extern CompilationStatus BlockTypeLexemeAction(TokenLabel label);
 extern CompilationStatus StringLexemeAction();
@@ -91,6 +93,8 @@ text_content		[^\n\r]+
 
 "@note"								{ return AtNoteLexemeAction(); }
 "@block"							{ return AtBlockLexemeAction(); }
+"@link"								{ return AtLinkLexemeAction(); }
+"@id"								{ return AtIdLexemeAction(); }
 "@end"								{ return AtEndLexemeAction(); }
 
 "tipo="								{ return TipoEqualsLexemeAction(); }
