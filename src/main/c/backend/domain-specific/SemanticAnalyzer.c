@@ -89,9 +89,9 @@ static void _validateSlideItems(Slide * slide, char *** pendingLinkTargetsRef, i
             }
             case SLIDE_ITEM_BLOCK: {
                 Block * block = item->block;
+                /* Bloques especiales pueden no tener título (tests 7 aceptan example sin título). */
                 if (block->type != BLOCK_NORMAL && block->title == NULL) {
-                    logError(_logger, "Bloque especial sin título (tipo=%d).", (int)block->type);
-                    state->semanticErrors++;
+                    logDebugging(_logger, "Bloque especial sin título permitido (tipo=%d).", (int)block->type);
                 }
                 break;
             }
@@ -103,9 +103,9 @@ static void _validateSlideItems(Slide * slide, char *** pendingLinkTargetsRef, i
 }
 
 /** Valida que todos los link targets existan entre los ids de slides. */
-static void _validateLinkTargets(char ** slideIds, int slideIdCount, char ** targets, int targetCount, CompilerState * state) {
+static void _validateLinkTargets(char ** slideIds, int slideIdCount, char ** slideTitles, int slideTitleCount, char ** targets, int targetCount, CompilerState * state) {
     for (int k = 0; k < targetCount; ++k) {
-        if (_findId(slideIds, slideIdCount, targets[k]) < 0) {
+        if (_findId(slideIds, slideIdCount, targets[k]) < 0 && _findId(slideTitles, slideTitleCount, targets[k]) < 0) {
             logError(_logger, "Link a id inexistente: %s", targets[k]);
             state->semanticErrors++;
         }
@@ -123,6 +123,7 @@ CompilationStatus executeSemanticAnalysis(CompilerState * compilerState) {
 
     // Estructuras auxiliares.
     char ** slideIds = NULL; int slideIdCount = 0;
+    char ** slideTitles = NULL; int slideTitleCount = 0;
     char ** pendingLinkTargets = NULL; int pendingLinkCount = 0;
 
     // Recorrido de slides.
@@ -132,6 +133,14 @@ CompilationStatus executeSemanticAnalysis(CompilerState * compilerState) {
         // Validación de título opcional: solo log informativo si falta.
         if (current->title == NULL) {
             logDebugging(_logger, "Slide %d sin título (permitido).", index);
+        }
+        // Registrar título (para permitir links por título) e id (para links por id).
+        if (current->title != NULL) {
+            char ** resizedT = realloc(slideTitles, sizeof(char*) * (slideTitleCount + 1));
+            if (resizedT != NULL) {
+                resizedT[slideTitleCount] = strdup(current->title);
+                slideTitles = resizedT; slideTitleCount++;
+            }
         }
         // Id duplicado.
         if (current->id != NULL) {
@@ -147,9 +156,10 @@ CompilationStatus executeSemanticAnalysis(CompilerState * compilerState) {
     }
 
     // Validar targets de links contra ids de slides.
-    _validateLinkTargets(slideIds, slideIdCount, pendingLinkTargets, pendingLinkCount, compilerState);
+    _validateLinkTargets(slideIds, slideIdCount, slideTitles, slideTitleCount, pendingLinkTargets, pendingLinkCount, compilerState);
 
     _freeIds(slideIds, slideIdCount);
+    _freeIds(slideTitles, slideTitleCount);
     _freeIds(pendingLinkTargets, pendingLinkCount);
 
     if (compilerState->semanticErrors > 0) {

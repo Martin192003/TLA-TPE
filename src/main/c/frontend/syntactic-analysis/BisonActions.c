@@ -130,17 +130,22 @@ Block * BlockSemanticAction(BlockType type, char * title, char * content) {
 Link * LinkSemanticAction(char * text, char * target) {
 	_logSyntacticAnalyzerAction(__FUNCTION__);
 	Link * link = calloc(1, sizeof(Link));
-	
+
 	if (text == target) {
-		char * cleanText = _removeQuotes(text);
-		link->text = strdup(cleanText);
-		link->target = strdup(cleanText);
-		free(cleanText);
+		/* Caso @link "X": usamos X como texto visible y también como destino (id o título). */
+		char * clean = _removeQuotes(text);
+		link->text = strdup(clean);
+		link->target = strdup(clean);
+		free(clean);
 	} else {
-		link->text = _removeQuotes(text);
-		link->target = _removeQuotes(target);
+		/* Caso @link "destino" "texto" en la gramática actual: el primer STRING es el destino y el segundo el texto.
+		 * La firma original asumía (texto, destino), así que invertimos aquí. */
+		char * cleanText = _removeQuotes(target);   /* segundo parámetro: texto visible */
+		char * cleanTarget = _removeQuotes(text);   /* primer parámetro: destino (id o título) */
+		link->text = cleanText;
+		link->target = cleanTarget;
 	}
-	
+
 	return link;
 }
 

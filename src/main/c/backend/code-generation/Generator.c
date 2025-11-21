@@ -2,6 +2,7 @@
 #include "Generator.h"
 #include "../../support/configuration/Environment.h"
 #include <string.h>
+#include <ctype.h>
 
 /* MODULE INTERNAL STATE */
 
@@ -45,6 +46,126 @@ static void _escapeLatex(char * dst, const char * src, size_t max) {
 		if (src[i] == '_' || src[i] == '%') { dst[j++]='\\'; dst[j++]=src[i]; }
 		else { dst[j++]=src[i]; }
 	} dst[j]='\0';
+}
+
+/* Sanitiza un título para convertirlo en label válido (a-z0-9 y '-') */
+static char * _sanitizeLabel(const char * raw, int index) {
+	if (raw == NULL || raw[0] == '\0') {
+		char buf[32]; snprintf(buf, sizeof(buf), "slide%d", index);
+		return strdup(buf);
+	}
+	size_t len = strlen(raw);
+	char * out = calloc(len * 2 + 16, 1); /* expand espacio para reemplazos */
+	size_t j = 0; bool prevDash = false;
+	for (size_t i = 0; i < len; ++i) {
+		unsigned char c = (unsigned char)raw[i];
+		if (isalnum(c)) {
+			out[j++] = (char)tolower(c);
+			prevDash = false;
+		} else if (c == ' ' || c == '-' || c == '_' ) {
+			if (!prevDash) { out[j++]='-'; prevDash=true; }
+		} else if (c == '"') {
+			continue; /* ignorar comillas */
+		} else {
+			if (!prevDash) { out[j++]='-'; prevDash=true; }
+		}
+	}
+	if (j == 0) {
+		char buf[32]; snprintf(buf, sizeof(buf), "slide%d", index);
+		free(out); return strdup(buf);
+	}
+	if (out[j-1] == '-') out[j-1] = '\0'; else out[j]='\0';
+	return out;
+}
+
+/* Busca label ya asignado para evitar duplicados. */
+static int _findLabel(char ** labels, int count, const char * label) {
+	for (int i=0;i<count;++i) if (strcmp(labels[i], label)==0) return i; return -1;
+}
+
+/* Recolecta todos los targets de enlaces internos para decidir qué slides necesitan label. */
+static char ** _collectLinkTargets(Program * program, int * targetCountRef) {
+	*targetCountRef = 0;
+	if (!program || !program->slides) return NULL;
+	char ** targets = NULL; int tcount = 0;
+	for (Slide * s = program->slides->first; s; s = s->next) {
+		SlideItem * it = s->items ? s->items->first : NULL;
+		while (it) {
+			if (it->type == SLIDE_ITEM_LINK && it->link && it->link->target) {
+				/* evitar duplicados */
+				bool exists = false; for (int k=0;k<tcount;++k) if (strcmp(targets[k], it->link->target)==0) { exists=true; break; }
+				if (!exists) {
+					targets = realloc(targets, sizeof(char*)*(tcount+1));
+					targets[tcount] = strdup(it->link->target);
+					tcount++;
+				}
+			}
+			it = it->next;
+		}
+	}
+	*targetCountRef = tcount; return targets;
+}
+
+/* Mapea claves (id o título original) a labels normalizados SOLO para slides referenciadas por un link. */
+static void _buildLabelMap(Program * program, char *** keysRef, char *** labelRef, int * countRef, char *** slideLabelsRef, int * slideCountRef) {
+	*keysRef = NULL; *labelRef = NULL; *countRef = 0; *slideLabelsRef = NULL; *slideCountRef = 0;
+	if (program == NULL || program->slides == NULL) return;
+	int targetCount = 0; char ** targets = _collectLinkTargets(program, &targetCount);
+	/* Contar slides */
+	int n=0; for (Slide * s=program->slides->first; s; s=s->next) n++;
+	char ** slideLabels = calloc(n, sizeof(char*));
+	char ** keys = NULL; char ** labels = NULL; int kcount=0;
+	int index=0; for (Slide * s=program->slides->first; s; s=s->next, ++index) {
+		bool needed = false;
+		/* Un slide necesita label si algún link apunta a su id o a su título. */
+		if (targetCount > 0) {
+			for (int t=0;t<targetCount && !needed;++t) {
+				if ((s->id && strcmp(s->id, targets[t])==0) || (s->title && strcmp(s->title, targets[t])==0)) {
+					needed = true; break;
+				}
+			}
+		}
+		if (!needed) {
+			slideLabels[index] = NULL; continue; /* no se genera label */
+		}
+		char * baseLabel = NULL;
+		if (s->id) {
+			baseLabel = strdup(s->id);
+		} else if (s->title) {
+			baseLabel = _sanitizeLabel(s->title, index+1);
+		} else {
+			baseLabel = _sanitizeLabel(NULL, index+1);
+		}
+		/* Asegurar unicidad dentro de los ya asignados (solo slides con label). */
+		if (_findLabel(slideLabels, index, baseLabel) >= 0) {
+			char buf[256]; int suffix=2;
+			do { snprintf(buf, sizeof(buf), "%s-%d", baseLabel, suffix++); } while (_findLabel(slideLabels, index, buf) >= 0);
+			free(baseLabel); baseLabel = strdup(buf);
+		}
+		slideLabels[index] = baseLabel;
+		if (s->id) {
+			keys = realloc(keys, sizeof(char*)*(kcount+1)); labels = realloc(labels, sizeof(char*)*(kcount+1));
+			keys[kcount] = strdup(s->id); labels[kcount] = baseLabel; kcount++;
+		}
+		if (s->title) {
+			keys = realloc(keys, sizeof(char*)*(kcount+1)); labels = realloc(labels, sizeof(char*)*(kcount+1));
+			keys[kcount] = strdup(s->title); labels[kcount] = baseLabel; kcount++;
+		}
+	}
+	/* Liberar targets */
+	for (int t=0;t<targetCount;++t) free(targets[t]); free(targets);
+	*keysRef = keys; *labelRef = labels; *countRef = kcount; *slideLabelsRef = slideLabels; *slideCountRef = n;
+}
+
+static const char * _resolveLabel(char ** keys, char ** labels, int count, const char * target) {
+	if (!target) return NULL;
+	for (int i=0;i<count;++i) if (strcmp(keys[i], target)==0) return labels[i];
+	return NULL;
+}
+
+static void _freeLabelMap(char ** keys, char ** labels, int count, char ** slideLabels, int slideCount) {
+	for (int i=0;i<count;++i) free(keys[i]); free(keys); free(labels); /* labels point to slideLabels content */
+	for (int i=0;i<slideCount;++i) free(slideLabels[i]); free(slideLabels);
 }
 
 /* Formatea código estilo C/JS con indentación basada en llaves. */
@@ -142,7 +263,7 @@ static char * _formatCode(const char * raw) {
 	return out;
 }
 
-static void _genLatexSlide(Slide * slide) {
+static void _genLatexSlide(Slide * slide, const char * slideLabel, char ** mapKeys, char ** mapLabels, int mapCount) {
 	char titleBuf[1024]; char subBuf[1024];
 	if (slide->title) _escapeLatex(titleBuf, slide->title, sizeof(titleBuf)); else strcpy(titleBuf, "");
 	if (slide->subtitle) _escapeLatex(subBuf, slide->subtitle, sizeof(subBuf)); else strcpy(subBuf, "");
@@ -153,8 +274,9 @@ static void _genLatexSlide(Slide * slide) {
 	} else {
 		_out(1, "\\begin{frame}%s\n", slide->id?"":"");
 	}
-	if (slide->id) {
-		_out(2, "\\label{%s}\n", slide->id);
+	/* Emitir label solo si esta diapositiva es target de algún enlace */
+	if (slideLabel) {
+		_out(2, "\\label{%s}\n", slideLabel);
 	}
 	SlideItem * item = slide->items ? slide->items->first : NULL;
 	int numberedCount = 0; /* contador para continuar enumeraciones a través de listas mixtas */
@@ -249,8 +371,10 @@ static void _genLatexSlide(Slide * slide) {
 					_out(2, "\\begin{%s}\n%s\n\\end{%s}\n", env, b->content?b->content:"", env);
 				break; }
 			case SLIDE_ITEM_LINK:
-				if (item->link && item->link->text && item->link->target)
-					_out(2, "\\hyperlink{%s}{%s}\n", item->link->target, item->link->text);
+				if (item->link && item->link->text && item->link->target) {
+					const char * resolved = _resolveLabel(mapKeys, mapLabels, mapCount, item->link->target);
+					_out(2, "\\hyperlink{%s}{%s}\n", resolved?resolved:item->link->target, item->link->text);
+				}
 				break;
 		}
 		item = item->next;
@@ -263,15 +387,21 @@ static void _generateLatex(Program * program) {
 	_out(0, "\\usepackage[utf8]{inputenc}\n\\usepackage[T1]{fontenc}\n\\usepackage{graphicx}\n\\usepackage{hyperref}\n");
 	/* Asegurar que enumerate muestre números explícitos (no bullets de tema). */
 	_out(0, "\\setbeamertemplate{enumerate items}[default]\n\n");
+	/* Construir mapeo de labels */
+	char ** mapKeys=NULL, ** mapLabels=NULL, ** slideLabels=NULL; int mapCount=0, slideCount=0;
+	_buildLabelMap(program, &mapKeys, &mapLabels, &mapCount, &slideLabels, &slideCount);
 	_out(0, "\\begin{document}\n\n");
-	Slide * s = program->slides->first; while (s) { _genLatexSlide(s); s = s->next; }
+	Slide * s = program->slides->first; int idx=0; while (s) { _genLatexSlide(s, slideLabels[idx], mapKeys, mapLabels, mapCount); s = s->next; idx++; }
+	_freeLabelMap(mapKeys, mapLabels, mapCount, slideLabels, slideCount);
 	_out(0, "\\end{document}\n");
 }
 
 static void _generateHtml(Program * program) {
 	_out(0, "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\"/>\n<title>Presentation</title>\n</head>\n<body>\n<div class=\"slides\">\n");
-	Slide * s = program->slides->first; while (s) {
-		_out(1, "<section>\n");
+	char ** mapKeys=NULL, ** mapLabels=NULL, ** slideLabels=NULL; int mapCount=0, slideCount=0;
+	_buildLabelMap(program, &mapKeys, &mapLabels, &mapCount, &slideLabels, &slideCount);
+	Slide * s = program->slides->first; int sidx=0; while (s) {
+		if (slideLabels[sidx]) _out(1, "<section id=\"%s\">\n", slideLabels[sidx]); else _out(1, "<section>\n");
 		if (s->title) _out(2, "<h2>%s</h2>\n", s->title);
 		if (s->subtitle) _out(2, "<h3>%s</h3>\n", s->subtitle);
 		SlideItem * item = s->items ? s->items->first : NULL;
@@ -320,14 +450,18 @@ static void _generateHtml(Program * program) {
 					if (item->note && item->note->content) _out(2, "<!-- speaker note: %s -->\n", item->note->content);
 					break;
 				case SLIDE_ITEM_LINK:
-					if (item->link && item->link->text && item->link->target) _out(2, "<a href=\"#%s\">%s</a>\n", item->link->target, item->link->text);
+					if (item->link && item->link->text && item->link->target) {
+						const char * resolved = _resolveLabel(mapKeys, mapLabels, mapCount, item->link->target);
+						_out(2, "<a href=\"#%s\">%s</a>\n", resolved?resolved:item->link->target, item->link->text);
+					}
 					break;
 			}
 			item = item->next;
 		}
 		_out(1, "</section>\n");
-		s = s->next;
+		s = s->next; sidx++;
 	}
+	_freeLabelMap(mapKeys, mapLabels, mapCount, slideLabels, slideCount);
 	_out(0, "</div>\n</body>\n</html>\n");
 }
 
