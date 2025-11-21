@@ -52,7 +52,7 @@ static char * _formatCode(const char * raw) {
 	if (raw == NULL) return strdup("");
 	/* Configuración vía variables de entorno. */
 	const char * style = getStringOrDefault("CODE_INDENT_STYLE", "spaces");
-	const char * mode  = getStringOrDefault("CODE_INDENT_MODE", "auto"); /* auto | original */
+	const char * mode  = getStringOrDefault("CODE_INDENT_MODE", "original"); /* auto | original */
 	int indentSize = atoi(getStringOrDefault("CODE_INDENT_SIZE", "4"));
 	const bool doubleSpace = strcmp(getStringOrDefault("CODE_DOUBLE_SPACE", "false"), "true") == 0;
 	if (indentSize <= 0) indentSize = 4;
@@ -157,13 +157,19 @@ static void _genLatexSlide(Slide * slide) {
 		_out(2, "\\label{%s}\n", slide->id);
 	}
 	SlideItem * item = slide->items ? slide->items->first : NULL;
+	int numberedCount = 0; /* contador para continuar enumeraciones a través de listas mixtas */
 	while (item) {
 		/* Agrupación de listas consecutivas */
 		if (item->type == SLIDE_ITEM_TEXT && item->text && item->text->listType != LIST_NONE) {
 			ListType currentListType = item->text->listType;
 			_out(2, "\\begin{%s}\n", currentListType == LIST_NUMBERED ? "enumerate" : "itemize");
+			if (currentListType == LIST_NUMBERED && numberedCount > 0) {
+				/* Continuar numeración previa: enumi = numberedCount */
+				_out(3, "\\setcounter{enumi}{%d}\n", numberedCount);
+			}
 			while (item && item->type == SLIDE_ITEM_TEXT && item->text && item->text->listType == currentListType) {
 				_out(3, "\\item %s\n", item->text->content);
+				if (currentListType == LIST_NUMBERED) { numberedCount++; }
 				item = item->next;
 			}
 			_out(2, "\\end{%s}\n", currentListType == LIST_NUMBERED ? "enumerate" : "itemize");
@@ -188,8 +194,45 @@ static void _genLatexSlide(Slide * slide) {
 			case SLIDE_ITEM_CODE:
 				if (item->codeBlock && item->codeBlock->content) {
 					char * formatted = _formatCode(item->codeBlock->content);
-					_out(2, "\\begin{verbatim}\n%s\\end{verbatim}\n", formatted);
+					_out(2, "\\begin{verbatim}\n");
+					const char * lineStart = formatted;
+					while (*lineStart) {
+						const char * lineEnd = lineStart;
+						while (*lineEnd && *lineEnd != '\n') lineEnd++;
+						const char * p = lineStart;
+						while (p < lineEnd) {
+							const char * start = p;
+							while (p < lineEnd && *p != '\t' && *p != '{' && *p != '}') p++;
+							if (p > start) {
+								char * chunk = strndup(start, p - start);
+								_out(0, "%s", chunk);
+								free(chunk);
+							}
+							if (p < lineEnd) {
+								if (*p == '{') _out(0, "\\{");
+								else if (*p == '}') _out(0, "\\}");
+								else if (*p == '\t') _out(0, "\\qquad ");
+								p++;
+							}
+						}
+						if (*lineEnd == '\n') {
+							bool firstBlankLine = (lineEnd == lineStart && lineStart == formatted); /* línea vacía inicial */
+							const char * nextLine = lineEnd + 1;
+							while (*nextLine && (*nextLine == ' ' || *nextLine == '\t' || *nextLine == '\r' || *nextLine == '\n')) nextLine++;
+							if (firstBlankLine) {
+								/* No agregar \\ en la primera línea vacía del bloque */
+								_out(0, "\n");
+							} else if (*nextLine) {
+								_out(0, "\\\\\n");
+							} else {
+								_out(0, "\n");
+							}
+						}
+						lineStart = lineEnd;
+						if (*lineStart == '\n') lineStart++;
+					}
 					free(formatted);
+					_out(2, "\\end{verbatim}\n");
 				}
 				break;
 			case SLIDE_ITEM_NOTE:
@@ -217,7 +260,9 @@ static void _genLatexSlide(Slide * slide) {
 
 static void _generateLatex(Program * program) {
 	_out(0, "\\documentclass{beamer}\n");
-	_out(0, "\\usepackage[utf8]{inputenc}\n\\usepackage[T1]{fontenc}\n\\usepackage{graphicx}\n\\usepackage{hyperref}\n\n");
+	_out(0, "\\usepackage[utf8]{inputenc}\n\\usepackage[T1]{fontenc}\n\\usepackage{graphicx}\n\\usepackage{hyperref}\n");
+	/* Asegurar que enumerate muestre números explícitos (no bullets de tema). */
+	_out(0, "\\setbeamertemplate{enumerate items}[default]\n\n");
 	_out(0, "\\begin{document}\n\n");
 	Slide * s = program->slides->first; while (s) { _genLatexSlide(s); s = s->next; }
 	_out(0, "\\end{document}\n");
@@ -230,12 +275,18 @@ static void _generateHtml(Program * program) {
 		if (s->title) _out(2, "<h2>%s</h2>\n", s->title);
 		if (s->subtitle) _out(2, "<h3>%s</h3>\n", s->subtitle);
 		SlideItem * item = s->items ? s->items->first : NULL;
+		int numberedCount = 0; /* contador para continuar numeración en listas mixtas */
 		while (item) {
 			if (item->type == SLIDE_ITEM_TEXT && item->text && item->text->listType != LIST_NONE) {
 				ListType currentListType = item->text->listType;
-				_out(2, "<%s>\n", currentListType == LIST_NUMBERED ? "ol" : "ul");
+				if (currentListType == LIST_NUMBERED && numberedCount > 0) {
+					_out(2, "<ol start=\"%d\">\n", numberedCount + 1);
+				} else {
+					_out(2, "<%s>\n", currentListType == LIST_NUMBERED ? "ol" : "ul");
+				}
 				while (item && item->type == SLIDE_ITEM_TEXT && item->text && item->text->listType == currentListType) {
 					_out(3, "<li>%s</li>\n", item->text->content);
+					if (currentListType == LIST_NUMBERED) { numberedCount++; }
 					item = item->next;
 				}
 				_out(2, "</%s>\n", currentListType == LIST_NUMBERED ? "ol" : "ul");
