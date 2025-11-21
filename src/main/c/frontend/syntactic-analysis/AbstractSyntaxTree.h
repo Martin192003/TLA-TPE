@@ -46,8 +46,16 @@ enum BlockType {
 	BLOCK_EXAMPLE
 };
 
+typedef enum ListType ListType;
+enum ListType {
+    LIST_NONE,
+    LIST_BULLET,
+    LIST_NUMBERED
+};
+
 struct Text {
 	char * content;
+	ListType listType; /* Indica si proviene de '-' o 'n. ' */
 };
 
 struct Image {

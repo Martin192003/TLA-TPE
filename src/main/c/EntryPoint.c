@@ -1,4 +1,5 @@
 #include "backend/code-generation/Generator.h"
+#include "backend/domain-specific/SemanticAnalyzer.h"
 #include "frontend/Frontend.h"
 #include "frontend/lexical-analysis/FlexActions.h"
 #include "frontend/syntactic-analysis/BisonActions.h"
@@ -20,32 +21,26 @@ const int main(const int length, const char ** arguments) {
 	}
 	CompilerState compilerState = {
 		.abstractSyntaxtTree = NULL,
-		.value = 0
+		.semanticErrors = 0
 	};
 	ModuleDestructor moduleDestructors[] = {
 		initializeAbstractSyntaxTreeModule(),
 		initializeFlexActionsModule(lexicalAnalyzer),
 		initializeBisonActionsModule(&compilerState),
-		initializeFrontendModule(lexicalAnalyzer)
-		// initializeGeneratorModule()
+		initializeFrontendModule(lexicalAnalyzer),
+		initializeSemanticAnalyzerModule(),
+		initializeGeneratorModule()
 	};
 	CompilationStatus compilationStatus = executeSyntacticAnalysis();
 	Program * program = compilerState.abstractSyntaxtTree;
 	if (compilationStatus == SUCCEEDED) {
-		// ----------------------------------------------------------------------------------------
-		// Beginning of the Backend... ------------------------------------------------------------
-		// logDebugging(logger, "Computing expression value...");
-		// ComputationResult computationResult = executeCalculator(&compilerState);
-		// if (computationResult.succeeded) {
-		// 	compilerState.value = computationResult.value;
-		// 	executeGenerator(&compilerState);
-		// }
-		// else {
-		// 	logError(logger, "The computation phase rejects the input program.");
-		// 	compilationStatus = FAILED;
-		// }
-		// ...end of the Backend. -----------------------------------------------------------------
-		// ----------------------------------------------------------------------------------------
+		CompilationStatus semanticStatus = executeSemanticAnalysis(&compilerState);
+		if (semanticStatus == SUCCEEDED) {
+			executeGenerator(&compilerState);
+		} else {
+			logError(logger, "La fase semántica rechaza el programa de entrada.");
+			compilationStatus = FAILED;
+		}
 	}
 	else {
 		logError(logger, "The syntactic-analysis phase rejects the input program.");

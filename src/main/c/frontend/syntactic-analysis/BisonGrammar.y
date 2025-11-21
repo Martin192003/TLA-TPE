@@ -133,8 +133,8 @@ slideItem: text													{ $$ = TextSlideItemSemanticAction($1); }
 	| link														{ $$ = LinkSlideItemSemanticAction($1); }
 	;
 
-text: MINUS TEXT_CONTENT										{ $$ = TextSemanticAction($2); }
-	| NUMBERED_LIST TEXT_CONTENT								{ $$ = TextSemanticAction($2); }
+text: MINUS TEXT_CONTENT										{ $$ = TextSemanticAction($2); $$->listType = LIST_BULLET; }
+	| NUMBERED_LIST TEXT_CONTENT								{ $$ = TextSemanticAction($2); $$->listType = LIST_NUMBERED; }
 	;
 
 image: AT_IMG STRING STRING										{ $$ = ImageSemanticAction($2, $3); }

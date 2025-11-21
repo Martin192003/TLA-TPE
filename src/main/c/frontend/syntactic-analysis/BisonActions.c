@@ -81,8 +81,10 @@ Text * TextSemanticAction(char * content) {
 	_logSyntacticAnalyzerAction(__FUNCTION__);
 	Text * text = calloc(1, sizeof(Text));
 	text->content = _removeQuotes(content);
+	text->listType = LIST_NONE;
 	return text;
 }
+
 
 Image * ImageSemanticAction(char * path, char * caption) {
 	_logSyntacticAnalyzerAction(__FUNCTION__);

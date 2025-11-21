@@ -9,12 +9,10 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-/** Initialize module's internal state. */
+/** Inicializa el módulo de generación de código. */
 ModuleDestructor initializeGeneratorModule();
 
-/**
- * Generates the final output using the current compiler state.
- */
+/** Genera salida final (LaTeX o HTML) según env OUTPUT_FORMAT. */
 void executeGenerator(CompilerState * compilerState);
 
 #endif

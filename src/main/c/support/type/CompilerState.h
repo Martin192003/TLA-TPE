@@ -2,27 +2,23 @@
 #define COMPILER_STATE_HEADER
 
 /**
- * The global state of the compiler. Should transport every data structure
- * needed across the different phases of a compilation.
+ * Estado global del compilador. Transporta estructuras entre fases.
  */
 typedef struct {
-	/**
-	 * The root node of the AST.
-	 */
-	void * abstractSyntaxtTree;
+    /**
+     * Nodo raíz del AST (Program *), se mantiene void* para reducir acoplamiento
+     * con headers y evitar ciclos de inclusión.
+     */
+    void * abstractSyntaxtTree;
 
-	/**
-	 * The computed value of the entire program (only for the calculator). You
-	 * should change or remove this field, or a random child will die, and it
-	 * will be your fault.
-	 */
-	signed int value;
+    /**
+     * Cantidad de errores semánticos detectados (si > 0 la generación se omite).
+     */
+    int semanticErrors;
 
-	// TODO: Add a symbol table.
-	// TODO: Add an stack to handle nested scopes.
-	// TODO: Add more configuration.
-	// TODO: Add whatever you need.
-	// TODO: ...
+    /**
+     * Reservado para futuras ampliaciones (tablas de símbolos, scopes, etc.).
+     */
 } CompilerState;
 
 #endif
