@@ -365,10 +365,22 @@ static void _genLatexSlide(Slide * slide, const char * slideLabel, char ** mapKe
 				Block * b = item->block;
 				const char * env = "block";
 				if (b->type == BLOCK_ALERT) env = "alertblock"; else if (b->type == BLOCK_EXAMPLE) env = "exampleblock";
-				if (b->title)
+				/* Tratamos título vacío como ausencia de título */
+				bool hasTitle = (b->title && b->title[0] != '\0');
+				if (hasTitle) {
 					_out(2, "\\begin{%s}{%s}\n%s\n\\end{%s}\n", env, b->title, b->content?b->content:"", env);
-				else
-					_out(2, "\\begin{%s}\n%s\n\\end{%s}\n", env, b->content?b->content:"", env);
+				} else {
+					/* Si es exampleblock (o alertblock) sin título, forzar braces vacíos para consistencia solicitada */
+					if (b->type == BLOCK_EXAMPLE) {
+						_out(2, "\\begin{%s} {}\n%s\n\\end{%s}\n", env, b->content?b->content:"", env);
+					} else if (b->type == BLOCK_ALERT) {
+						/* Mantener alertblock sin título también con braces vacíos para simetría (opcional) */
+						_out(2, "\\begin{%s} {}\n%s\n\\end{%s}\n", env, b->content?b->content:"", env);
+					} else {
+						/* El block normal puede ir sin argumento */
+						_out(2, "\\begin{%s}\n%s\n\\end{%s}\n", env, b->content?b->content:"", env);
+					}
+				}
 				break; }
 			case SLIDE_ITEM_LINK:
 				if (item->link && item->link->text && item->link->target) {
@@ -385,6 +397,8 @@ static void _genLatexSlide(Slide * slide, const char * slideLabel, char ** mapKe
 static void _generateLatex(Program * program) {
 	_out(0, "\\documentclass{beamer}\n");
 	_out(0, "\\usepackage[utf8]{inputenc}\n\\usepackage[T1]{fontenc}\n\\usepackage{graphicx}\n\\usepackage{hyperref}\n");
+	/* Usar el tema Madrid para todas las presentaciones LaTeX. */
+	_out(0, "\\usetheme{Madrid}\n");
 	/* Asegurar que enumerate muestre números explícitos (no bullets de tema). */
 	_out(0, "\\setbeamertemplate{enumerate items}[default]\n\n");
 	/* Construir mapeo de labels */
