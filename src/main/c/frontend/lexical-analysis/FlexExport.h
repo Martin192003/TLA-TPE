@@ -5,13 +5,6 @@
 #include "../../support/type/LexicalAnalyzer.h"
 #include <stdbool.h>
 
-/**
- * Hook that allows to export a static function or variable from the inside of
- * Flex infrastructure, in this case, the current context (a.k.a. start
- * condition). This source exists only because Flex uses static for methods
- * that are in its public API, a clearly flawed design decision.
- */
-
 FlexContext flexCurrentContext(LexicalAnalyzer * lexicalAnalyzer) {
 	struct yyguts_t * yyg = (struct yyguts_t *) lexicalAnalyzer->scanner;
 	return YYSTATE;

@@ -9,14 +9,8 @@
 #include "BisonParser.h"
 #include <stdlib.h>
 
-/** Initialize module's internal state. */
 ModuleDestructor initializeBisonActionsModule();
 
-/**
- * Bison semantic actions for presentation language.
- */
-
-// Text and content actions
 Text * TextSemanticAction(char * content);
 Image * ImageSemanticAction(char * path, char * caption);
 Image * ImageWithLegendSemanticAction(char * path, char * caption, char * legend);
@@ -25,7 +19,6 @@ Note * NoteSemanticAction(char * content);
 Block * BlockSemanticAction(BlockType type, char * title, char * content);
 Link * LinkSemanticAction(char * text, char * target);
 
-// Slide item actions
 SlideItem * TextSlideItemSemanticAction(Text * text);
 SlideItem * ImageSlideItemSemanticAction(Image * image);
 SlideItem * CodeSlideItemSemanticAction(CodeBlock * codeBlock);
@@ -33,22 +26,18 @@ SlideItem * NoteSlideItemSemanticAction(Note * note);
 SlideItem * BlockSlideItemSemanticAction(Block * block);
 SlideItem * LinkSlideItemSemanticAction(Link * link);
 
-// List actions
 SlideItemList * EmptySlideItemListSemanticAction();
 SlideItemList * SlideItemListSemanticAction(SlideItemList * list, SlideItem * item);
 
-// Slide actions
 Slide * SlideSemanticAction(char * title, char * subtitle, SlideItemList * items);
 Slide * SimpleSlideSemanticAction(char * title, SlideItemList * items);
 Slide * SlideWithoutTitleSemanticAction(SlideItemList * items);
 Slide * SlideWithIdSemanticAction(char * title, char * id, SlideItemList * items);
 Slide * SlideWithSubtitleAndIdSemanticAction(char * title, char * subtitle, char * id, SlideItemList * items);
 
-// Slide list actions
 SlideList * EmptySlideListSemanticAction();
 SlideList * SlideListSemanticAction(SlideList * list, Slide * slide);
 
-// Program action
 Program * ProgramSemanticAction(SlideList * slides);
 
 #endif

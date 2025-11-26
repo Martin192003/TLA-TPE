@@ -7,10 +7,8 @@
 #include "../../support/type/CompilerState.h"
 #include "../../support/type/ModuleDestructor.h"
 
-/** Inicializa el módulo de análisis semántico. */
 ModuleDestructor initializeSemanticAnalyzerModule();
 
-/** Ejecuta las validaciones semánticas sobre el AST. */
 CompilationStatus executeSemanticAnalysis(CompilerState * compilerState);
 
 #endif

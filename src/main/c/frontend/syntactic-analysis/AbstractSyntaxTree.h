@@ -5,12 +5,7 @@
 #include "../../support/type/ModuleDestructor.h"
 #include <stdlib.h>
 
-/** Initialize module's internal state. */
 ModuleDestructor initializeAbstractSyntaxTreeModule();
-
-/**
- * Type definitions for the presentation language AST.
- */
 
 typedef enum SlideItemType SlideItemType;
 typedef enum BlockType BlockType;
@@ -26,10 +21,6 @@ typedef struct SlideItemList SlideItemList;
 typedef struct Slide Slide;
 typedef struct SlideList SlideList;
 typedef struct Program Program;
-
-/**
- * Node types for the Abstract Syntax Tree (AST).
- */
 
 enum SlideItemType {
 	SLIDE_ITEM_TEXT,
@@ -55,7 +46,7 @@ enum ListType {
 
 struct Text {
 	char * content;
-	ListType listType; /* Indica si proviene de '-' o 'n. ' */
+	ListType listType;
 };
 
 struct Image {
@@ -117,10 +108,6 @@ struct SlideList {
 struct Program {
 	SlideList * slides;
 };
-
-/**
- * Node recursive destructors.
- */
 
 void destroyText(Text * text);
 void destroyImage(Image * image);

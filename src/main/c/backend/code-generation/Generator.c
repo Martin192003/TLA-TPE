@@ -1,19 +1,15 @@
-/** Nuevo generador para el DSL de presentaciones. */
 #include "Generator.h"
 #include "../../support/configuration/Environment.h"
 #include <string.h>
 #include <ctype.h>
 
-/* MODULE INTERNAL STATE */
 
 static Logger * _logger = NULL;
 static const char _indentationCharacter = ' ';
 static const char _indentationSize = 4;
 
-/** Shutdown del módulo. */
 static void _shutdownGeneratorModule() {
 	if (_logger != NULL) {
-		logDebugging(_logger, "Destroying module: Generator...");
 		destroyLogger(_logger);
 		_logger = NULL;
 	}
@@ -24,7 +20,6 @@ ModuleDestructor initializeGeneratorModule() {
 	return _shutdownGeneratorModule;
 }
 
-/* HELPERS */
 
 static char * _indentation(const unsigned int level) {
 	return indentation(_indentationCharacter, level, _indentationSize);
@@ -41,21 +36,19 @@ static void _out(unsigned int lvl, const char * fmt, ...) {
 }
 
 static void _escapeLatex(char * dst, const char * src, size_t max) {
-	// Versión súper básica: solo sustituye _ y %.
 	size_t j = 0; for (size_t i = 0; src && src[i] && j + 2 < max; ++i) {
 		if (src[i] == '_' || src[i] == '%') { dst[j++]='\\'; dst[j++]=src[i]; }
 		else { dst[j++]=src[i]; }
 	} dst[j]='\0';
 }
 
-/* Sanitiza un título para convertirlo en label válido (a-z0-9 y '-') */
 static char * _sanitizeLabel(const char * raw, int index) {
 	if (raw == NULL || raw[0] == '\0') {
 		char buf[32]; snprintf(buf, sizeof(buf), "slide%d", index);
 		return strdup(buf);
 	}
 	size_t len = strlen(raw);
-	char * out = calloc(len * 2 + 16, 1); /* expand espacio para reemplazos */
+	char * out = calloc(len * 2 + 16, 1);
 	size_t j = 0; bool prevDash = false;
 	for (size_t i = 0; i < len; ++i) {
 		unsigned char c = (unsigned char)raw[i];
@@ -65,7 +58,7 @@ static char * _sanitizeLabel(const char * raw, int index) {
 		} else if (c == ' ' || c == '-' || c == '_' ) {
 			if (!prevDash) { out[j++]='-'; prevDash=true; }
 		} else if (c == '"') {
-			continue; /* ignorar comillas */
+			continue;
 		} else {
 			if (!prevDash) { out[j++]='-'; prevDash=true; }
 		}
@@ -78,12 +71,10 @@ static char * _sanitizeLabel(const char * raw, int index) {
 	return out;
 }
 
-/* Busca label ya asignado para evitar duplicados. */
 static int _findLabel(char ** labels, int count, const char * label) {
 	for (int i=0;i<count;++i) if (strcmp(labels[i], label)==0) return i; return -1;
 }
 
-/* Recolecta todos los targets de enlaces internos para decidir qué slides necesitan label. */
 static char ** _collectLinkTargets(Program * program, int * targetCountRef) {
 	*targetCountRef = 0;
 	if (!program || !program->slides) return NULL;
@@ -92,7 +83,6 @@ static char ** _collectLinkTargets(Program * program, int * targetCountRef) {
 		SlideItem * it = s->items ? s->items->first : NULL;
 		while (it) {
 			if (it->type == SLIDE_ITEM_LINK && it->link && it->link->target) {
-				/* evitar duplicados */
 				bool exists = false; for (int k=0;k<tcount;++k) if (strcmp(targets[k], it->link->target)==0) { exists=true; break; }
 				if (!exists) {
 					targets = realloc(targets, sizeof(char*)*(tcount+1));
@@ -106,7 +96,6 @@ static char ** _collectLinkTargets(Program * program, int * targetCountRef) {
 	*targetCountRef = tcount; return targets;
 }
 
-/* Mapea claves (id o título original) a labels normalizados SOLO para slides referenciadas por un link. */
 static void _buildLabelMap(Program * program, char *** keysRef, char *** labelRef, int * countRef, char *** slideLabelsRef, int * slideCountRef) {
 	*keysRef = NULL; *labelRef = NULL; *countRef = 0; *slideLabelsRef = NULL; *slideCountRef = 0;
 	if (program == NULL || program->slides == NULL) return;
@@ -117,7 +106,6 @@ static void _buildLabelMap(Program * program, char *** keysRef, char *** labelRe
 	char ** keys = NULL; char ** labels = NULL; int kcount=0;
 	int index=0; for (Slide * s=program->slides->first; s; s=s->next, ++index) {
 		bool needed = false;
-		/* Un slide necesita label si algún link apunta a su id o a su título. */
 		if (targetCount > 0) {
 			for (int t=0;t<targetCount && !needed;++t) {
 				if ((s->id && strcmp(s->id, targets[t])==0) || (s->title && strcmp(s->title, targets[t])==0)) {
@@ -126,7 +114,7 @@ static void _buildLabelMap(Program * program, char *** keysRef, char *** labelRe
 			}
 		}
 		if (!needed) {
-			slideLabels[index] = NULL; continue; /* no se genera label */
+			slideLabels[index] = NULL; continue;
 		}
 		char * baseLabel = NULL;
 		if (s->id) {
@@ -136,7 +124,6 @@ static void _buildLabelMap(Program * program, char *** keysRef, char *** labelRe
 		} else {
 			baseLabel = _sanitizeLabel(NULL, index+1);
 		}
-		/* Asegurar unicidad dentro de los ya asignados (solo slides con label). */
 		if (_findLabel(slideLabels, index, baseLabel) >= 0) {
 			char buf[256]; int suffix=2;
 			do { snprintf(buf, sizeof(buf), "%s-%d", baseLabel, suffix++); } while (_findLabel(slideLabels, index, buf) >= 0);
@@ -152,7 +139,6 @@ static void _buildLabelMap(Program * program, char *** keysRef, char *** labelRe
 			keys[kcount] = strdup(s->title); labels[kcount] = baseLabel; kcount++;
 		}
 	}
-	/* Liberar targets */
 	for (int t=0;t<targetCount;++t) free(targets[t]); free(targets);
 	*keysRef = keys; *labelRef = labels; *countRef = kcount; *slideLabelsRef = slideLabels; *slideCountRef = n;
 }
@@ -164,24 +150,20 @@ static const char * _resolveLabel(char ** keys, char ** labels, int count, const
 }
 
 static void _freeLabelMap(char ** keys, char ** labels, int count, char ** slideLabels, int slideCount) {
-	for (int i=0;i<count;++i) free(keys[i]); free(keys); free(labels); /* labels point to slideLabels content */
+	for (int i=0;i<count;++i) free(keys[i]); free(keys); free(labels);
 	for (int i=0;i<slideCount;++i) free(slideLabels[i]); free(slideLabels);
 }
 
-/* Formatea código estilo C/JS con indentación basada en llaves. */
 static char * _formatCode(const char * raw) {
 	if (raw == NULL) return strdup("");
-	/* Configuración vía variables de entorno. */
 	const char * style = getStringOrDefault("CODE_INDENT_STYLE", "spaces");
-	const char * mode  = getStringOrDefault("CODE_INDENT_MODE", "original"); /* auto | original */
+	const char * mode  = getStringOrDefault("CODE_INDENT_MODE", "original");
 	int indentSize = atoi(getStringOrDefault("CODE_INDENT_SIZE", "4"));
 	const bool doubleSpace = strcmp(getStringOrDefault("CODE_DOUBLE_SPACE", "false"), "true") == 0;
 	if (indentSize <= 0) indentSize = 4;
 	char indentChar = (strcmp(style, "tabs") == 0) ? '\t' : ' ';
 
-	/* Modo "original": no tocar indentación, solo garantizar que cada línea termine en '\n'. */
 	if (strcmp(mode, "original") == 0) {
-		/* Reservar buffer: cada línea al menos agrega un '\n'. */
 		size_t len = strlen(raw);
 		char * out = calloc(len * 2 + 2, 1);
 		const char * p = raw;
@@ -190,16 +172,15 @@ static char * _formatCode(const char * raw) {
 			while (*p && *p != '\n' && *p != '\r') p++;
 			size_t lineLen = (size_t)(p - lineStart);
 			if (lineLen) strncat(out, lineStart, lineLen);
-			/* Siempre terminar la línea con '\n' incluso si el original no la tenía. */
 			strcat(out, "\n");
-			if (*p == '\r') p++; /* ignorar CR */
-			if (*p == '\n') p++; /* saltar LF */
+			if (*p == '\r') p++;
+			if (*p == '\n') p++;
 		}
 		return out;
 	}
 
 	size_t len = strlen(raw);
-	size_t cap = len * (doubleSpace ? 3 : 2) + 256; /* capacidad inicial generosa */
+	size_t cap = len * (doubleSpace ? 3 : 2) + 256;
 	char * out = calloc(cap, 1);
 	int level = 0;
 	const char * p = raw;
@@ -212,40 +193,28 @@ static char * _formatCode(const char * raw) {
 		memcpy(line, lineStart, lineLen);
 		line[lineLen] = '\0';
 
-		/* Remover CR final (Windows). */
 		if (lineLen > 0 && line[lineLen-1] == '\r') line[lineLen-1] = '\0';
-
-		/* Ya no saltamos la primera línea vacía: se conserva exactamente si existe. */
-
-		/* Detectar indentación original. */
 		size_t originalIndentChars = 0; while (line[originalIndentChars] == ' ' || line[originalIndentChars] == '\t') originalIndentChars++;
 		size_t contentStart = originalIndentChars;
 
-		/* Si la línea (sin espacios) empieza con '}' reducimos nivel antes de imprimir cuando estamos en modo auto. */
 		size_t kscan = contentStart; if (line[kscan] == '}' && level > 0 && strcmp(mode, "auto") == 0) level--;
 
-		/* Calcular indentación efectiva. */
 		int effectiveIndent;
-		/* En modo auto aplicamos indent calculada, en modo original no llegamos aquí (return temprano). */
 		effectiveIndent = level;
 
-		/* Expandir buffer si va a quedar chico. */
 		size_t need = strlen(out) + (lineLen + 1) * (doubleSpace ? 2 : 1) + 16 + (effectiveIndent >= 0 ? (indentChar=='\t'?effectiveIndent:effectiveIndent*indentSize) : originalIndentChars) + 8;
 		if (need >= cap) { cap = need + 256; out = realloc(out, cap); }
 
-		/* Construir indentación. */
 		int indentUnits = (indentChar == '\t') ? effectiveIndent : effectiveIndent * indentSize;
 		for (int i = 0; i < indentUnits; ++i) {
 			if (indentChar == '\t') strcat(out, "\t");
 			else { size_t l = strlen(out); out[l] = indentChar; out[l+1] = '\0'; }
 		}
 
-		/* Copiar contenido sin modificar. */
 		strcat(out, line + contentStart);
 		strcat(out, "\n");
 		if (doubleSpace) strcat(out, "\n");
 
-		/* Ajustar nivel según llaves (modo auto). */
 		if (strcmp(mode, "auto") == 0) {
 			int opens = 0, closes = 0;
 			for (size_t c = contentStart; line[c]; ++c) {
@@ -258,7 +227,7 @@ static char * _formatCode(const char * raw) {
 
 		firstLineEmitted = true;
 		free(line);
-		if (*p == '\n') p++; /* saltar el '\n' */
+		if (*p == '\n') p++;
 	}
 	return out;
 }
@@ -274,19 +243,16 @@ static void _genLatexSlide(Slide * slide, const char * slideLabel, char ** mapKe
 	} else {
 		_out(1, "\\begin{frame}%s\n", slide->id?"":"");
 	}
-	/* Emitir label solo si esta diapositiva es target de algún enlace */
 	if (slideLabel) {
 		_out(2, "\\label{%s}\n", slideLabel);
 	}
 	SlideItem * item = slide->items ? slide->items->first : NULL;
-	int numberedCount = 0; /* contador para continuar enumeraciones a través de listas mixtas */
+	int numberedCount = 0;
 	while (item) {
-		/* Agrupación de listas consecutivas */
 		if (item->type == SLIDE_ITEM_TEXT && item->text && item->text->listType != LIST_NONE) {
 			ListType currentListType = item->text->listType;
 			_out(2, "\\begin{%s}\n", currentListType == LIST_NUMBERED ? "enumerate" : "itemize");
 			if (currentListType == LIST_NUMBERED && numberedCount > 0) {
-				/* Continuar numeración previa: enumi = numberedCount */
 				_out(3, "\\setcounter{enumi}{%d}\n", numberedCount);
 			}
 			while (item && item->type == SLIDE_ITEM_TEXT && item->text && item->text->listType == currentListType) {
@@ -295,7 +261,7 @@ static void _genLatexSlide(Slide * slide, const char * slideLabel, char ** mapKe
 				item = item->next;
 			}
 			_out(2, "\\end{%s}\n", currentListType == LIST_NUMBERED ? "enumerate" : "itemize");
-			continue; /* continuamos con el siguiente item ya avanzado */
+			continue;
 		}
 		switch (item->type) {
 			case SLIDE_ITEM_TEXT:
@@ -338,11 +304,10 @@ static void _genLatexSlide(Slide * slide, const char * slideLabel, char ** mapKe
 							}
 						}
 						if (*lineEnd == '\n') {
-							bool firstBlankLine = (lineEnd == lineStart && lineStart == formatted); /* línea vacía inicial */
+							bool firstBlankLine = (lineEnd == lineStart && lineStart == formatted);
 							const char * nextLine = lineEnd + 1;
 							while (*nextLine && (*nextLine == ' ' || *nextLine == '\t' || *nextLine == '\r' || *nextLine == '\n')) nextLine++;
 							if (firstBlankLine) {
-								/* No agregar \\ en la primera línea vacía del bloque */
 								_out(0, "\n");
 							} else if (*nextLine) {
 								_out(0, "\\\\\n");
@@ -365,19 +330,15 @@ static void _genLatexSlide(Slide * slide, const char * slideLabel, char ** mapKe
 				Block * b = item->block;
 				const char * env = "block";
 				if (b->type == BLOCK_ALERT) env = "alertblock"; else if (b->type == BLOCK_EXAMPLE) env = "exampleblock";
-				/* Tratamos título vacío como ausencia de título */
 				bool hasTitle = (b->title && b->title[0] != '\0');
 				if (hasTitle) {
 					_out(2, "\\begin{%s}{%s}\n%s\n\\end{%s}\n", env, b->title, b->content?b->content:"", env);
 				} else {
-					/* Si es exampleblock (o alertblock) sin título, forzar braces vacíos para consistencia solicitada */
 					if (b->type == BLOCK_EXAMPLE) {
 						_out(2, "\\begin{%s} {}\n%s\n\\end{%s}\n", env, b->content?b->content:"", env);
 					} else if (b->type == BLOCK_ALERT) {
-						/* Mantener alertblock sin título también con braces vacíos para simetría (opcional) */
 						_out(2, "\\begin{%s} {}\n%s\n\\end{%s}\n", env, b->content?b->content:"", env);
 					} else {
-						/* El block normal puede ir sin argumento */
 						_out(2, "\\begin{%s}\n%s\n\\end{%s}\n", env, b->content?b->content:"", env);
 					}
 				}
@@ -397,11 +358,8 @@ static void _genLatexSlide(Slide * slide, const char * slideLabel, char ** mapKe
 static void _generateLatex(Program * program) {
 	_out(0, "\\documentclass{beamer}\n");
 	_out(0, "\\usepackage[utf8]{inputenc}\n\\usepackage[T1]{fontenc}\n\\usepackage{graphicx}\n\\usepackage{hyperref}\n");
-	/* Usar el tema Madrid para todas las presentaciones LaTeX. */
 	_out(0, "\\usetheme{Madrid}\n");
-	/* Asegurar que enumerate muestre números explícitos (no bullets de tema). */
 	_out(0, "\\setbeamertemplate{enumerate items}[default]\n\n");
-	/* Construir mapeo de labels */
 	char ** mapKeys=NULL, ** mapLabels=NULL, ** slideLabels=NULL; int mapCount=0, slideCount=0;
 	_buildLabelMap(program, &mapKeys, &mapLabels, &mapCount, &slideLabels, &slideCount);
 	_out(0, "\\begin{document}\n\n");
@@ -410,87 +368,12 @@ static void _generateLatex(Program * program) {
 	_out(0, "\\end{document}\n");
 }
 
-static void _generateHtml(Program * program) {
-	_out(0, "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\"/>\n<title>Presentation</title>\n</head>\n<body>\n<div class=\"slides\">\n");
-	char ** mapKeys=NULL, ** mapLabels=NULL, ** slideLabels=NULL; int mapCount=0, slideCount=0;
-	_buildLabelMap(program, &mapKeys, &mapLabels, &mapCount, &slideLabels, &slideCount);
-	Slide * s = program->slides->first; int sidx=0; while (s) {
-		if (slideLabels[sidx]) _out(1, "<section id=\"%s\">\n", slideLabels[sidx]); else _out(1, "<section>\n");
-		if (s->title) _out(2, "<h2>%s</h2>\n", s->title);
-		if (s->subtitle) _out(2, "<h3>%s</h3>\n", s->subtitle);
-		SlideItem * item = s->items ? s->items->first : NULL;
-		int numberedCount = 0; /* contador para continuar numeración en listas mixtas */
-		while (item) {
-			if (item->type == SLIDE_ITEM_TEXT && item->text && item->text->listType != LIST_NONE) {
-				ListType currentListType = item->text->listType;
-				if (currentListType == LIST_NUMBERED && numberedCount > 0) {
-					_out(2, "<ol start=\"%d\">\n", numberedCount + 1);
-				} else {
-					_out(2, "<%s>\n", currentListType == LIST_NUMBERED ? "ol" : "ul");
-				}
-				while (item && item->type == SLIDE_ITEM_TEXT && item->text && item->text->listType == currentListType) {
-					_out(3, "<li>%s</li>\n", item->text->content);
-					if (currentListType == LIST_NUMBERED) { numberedCount++; }
-					item = item->next;
-				}
-				_out(2, "</%s>\n", currentListType == LIST_NUMBERED ? "ol" : "ul");
-				continue;
-			}
-			switch (item->type) {
-				case SLIDE_ITEM_TEXT:
-					if (item->text && item->text->content) _out(2, "<p>%s</p>\n", item->text->content);
-					break;
-				case SLIDE_ITEM_IMAGE:
-					if (item->image) {
-						_out(2, "<figure>\n");
-						_out(3, "<img src=\"%s\" alt=\"%s\" style=\"max-width:70%%\"/>\n", item->image->path, item->image->caption?item->image->caption:"image");
-						if (item->image->caption) _out(3, "<figcaption>%s</figcaption>\n", item->image->caption);
-						if (item->image->legend) _out(3, "<small>%s</small>\n", item->image->legend);
-						_out(2, "</figure>\n");
-					}
-					break;
-				case SLIDE_ITEM_CODE:
-					if (item->codeBlock && item->codeBlock->content) _out(2, "<pre><code>%s</code></pre>\n", item->codeBlock->content);
-					break;
-				case SLIDE_ITEM_BLOCK:
-					if (item->block) {
-						const char * cls = "block";
-						if (item->block->type == BLOCK_ALERT) cls = "alert"; else if (item->block->type == BLOCK_EXAMPLE) cls = "example";
-						if (item->block->title) _out(2, "<div class=\"%s\"><strong>%s</strong><p>%s</p></div>\n", cls, item->block->title, item->block->content?item->block->content:""
-						); else _out(2, "<div class=\"%s\"><p>%s</p></div>\n", cls, item->block->content?item->block->content:"");
-					}
-					break;
-				case SLIDE_ITEM_NOTE:
-					if (item->note && item->note->content) _out(2, "<!-- speaker note: %s -->\n", item->note->content);
-					break;
-				case SLIDE_ITEM_LINK:
-					if (item->link && item->link->text && item->link->target) {
-						const char * resolved = _resolveLabel(mapKeys, mapLabels, mapCount, item->link->target);
-						_out(2, "<a href=\"#%s\">%s</a>\n", resolved?resolved:item->link->target, item->link->text);
-					}
-					break;
-			}
-			item = item->next;
-		}
-		_out(1, "</section>\n");
-		s = s->next; sidx++;
-	}
-	_freeLabelMap(mapKeys, mapLabels, mapCount, slideLabels, slideCount);
-	_out(0, "</div>\n</body>\n</html>\n");
-}
 
 void executeGenerator(CompilerState * compilerState) {
-	logDebugging(_logger, "Generating final output...");
 	Program * program = (Program*) compilerState->abstractSyntaxtTree;
 	if (program == NULL) {
 		logError(_logger, "No hay AST para generar.");
 		return;
 	}
-	const char * format = getStringOrDefault("OUTPUT_FORMAT", "latex");
-	if (strcmp(format, "html") == 0) {
-		_generateHtml(program);
-	} else {
-		_generateLatex(program);
-	}
-	logDebugging(_logger, "Generación terminada.");
+	_generateLatex(program);
 }

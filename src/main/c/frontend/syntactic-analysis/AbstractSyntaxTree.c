@@ -1,14 +1,11 @@
 #include "AbstractSyntaxTree.h"
 #include <string.h>
 
-/* MODULE INTERNAL STATE */
 
 static Logger * _logger = NULL;
 
-/** Shutdown module's internal state. */
 void _shutdownAbstractSyntaxTreeModule() {
 	if (_logger != NULL) {
-		logDebugging(_logger, "Destroying module: AbstractSyntaxTree...");
 		destroyLogger(_logger);
 		_logger = NULL;
 	}
@@ -19,10 +16,8 @@ ModuleDestructor initializeAbstractSyntaxTreeModule() {
 	return _shutdownAbstractSyntaxTreeModule;
 }
 
-/* PUBLIC FUNCTIONS */
 
 void destroyText(Text * text) {
-	logDebugging(_logger, "Executing destructor: %s", __FUNCTION__);
 	if (text != NULL) {
 		if (text->content != NULL) {
 			free(text->content);
@@ -32,7 +27,6 @@ void destroyText(Text * text) {
 }
 
 void destroyImage(Image * image) {
-	logDebugging(_logger, "Executing destructor: %s", __FUNCTION__);
 	if (image != NULL) {
 		if (image->path != NULL) {
 			free(image->path);
@@ -48,7 +42,6 @@ void destroyImage(Image * image) {
 }
 
 void destroyCodeBlock(CodeBlock * codeBlock) {
-	logDebugging(_logger, "Executing destructor: %s", __FUNCTION__);
 	if (codeBlock != NULL) {
 		if (codeBlock->content != NULL) {
 			free(codeBlock->content);
@@ -58,7 +51,6 @@ void destroyCodeBlock(CodeBlock * codeBlock) {
 }
 
 void destroyNote(Note * note) {
-	logDebugging(_logger, "Executing destructor: %s", __FUNCTION__);
 	if (note != NULL) {
 		if (note->content != NULL) {
 			free(note->content);
@@ -68,7 +60,6 @@ void destroyNote(Note * note) {
 }
 
 void destroyBlock(Block * block) {
-	logDebugging(_logger, "Executing destructor: %s", __FUNCTION__);
 	if (block != NULL) {
 		if (block->title != NULL) {
 			free(block->title);
@@ -81,7 +72,6 @@ void destroyBlock(Block * block) {
 }
 
 void destroyLink(Link * link) {
-	logDebugging(_logger, "Executing destructor: %s", __FUNCTION__);
 	if (link != NULL) {
 		if (link->text != NULL) {
 			free(link->text);
@@ -94,7 +84,6 @@ void destroyLink(Link * link) {
 }
 
 void destroySlideItem(SlideItem * slideItem) {
-	logDebugging(_logger, "Executing destructor: %s", __FUNCTION__);
 	if (slideItem != NULL) {
 		switch (slideItem->type) {
 			case SLIDE_ITEM_TEXT:
@@ -121,7 +110,6 @@ void destroySlideItem(SlideItem * slideItem) {
 }
 
 void destroySlideItemList(SlideItemList * slideItemList) {
-	logDebugging(_logger, "Executing destructor: %s", __FUNCTION__);
 	if (slideItemList != NULL) {
 		SlideItem * current = slideItemList->first;
 		while (current != NULL) {
@@ -134,7 +122,6 @@ void destroySlideItemList(SlideItemList * slideItemList) {
 }
 
 void destroySlide(Slide * slide) {
-	logDebugging(_logger, "Executing destructor: %s", __FUNCTION__);
 	if (slide != NULL) {
 		if (slide->title != NULL) {
 			free(slide->title);
@@ -151,7 +138,6 @@ void destroySlide(Slide * slide) {
 }
 
 void destroySlideList(SlideList * slideList) {
-	logDebugging(_logger, "Executing destructor: %s", __FUNCTION__);
 	if (slideList != NULL) {
 		Slide * current = slideList->first;
 		while (current != NULL) {
@@ -164,7 +150,6 @@ void destroySlideList(SlideList * slideList) {
 }
 
 void destroyProgram(Program * program) {
-	logDebugging(_logger, "Executing destructor: %s", __FUNCTION__);
 	if (program != NULL) {
 		destroySlideList(program->slides);
 		free(program);

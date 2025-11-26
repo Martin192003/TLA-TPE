@@ -1,15 +1,12 @@
 #include "BisonActions.h"
 #include <string.h>
 
-/* MODULE INTERNAL STATE */
 
 static CompilerState * _compilerState = NULL;
 static Logger * _logger = NULL;
 
-/** Shutdown module's internal state. */
 void _shutdownBisonActionsModule() {
 	if (_logger != NULL) {
-		logDebugging(_logger, "Destroying module: BisonActions...");
 		destroyLogger(_logger);
 		_logger = NULL;
 	}
@@ -22,17 +19,10 @@ ModuleDestructor initializeBisonActionsModule(CompilerState * compilerState) {
 	return _shutdownBisonActionsModule;
 }
 
-/* IMPORTED FUNCTIONS */
-
-/* PRIVATE FUNCTIONS */
-
 static void _logSyntacticAnalyzerAction(const char * functionName);
 static char * _removeQuotes(const char * quotedString);
 
-/**
- * Removes quotes from a quoted string and returns a duplicated string without quotes.
- * FREES the original string to prevent memory leaks.
- */
+
 static char * _removeQuotes(const char * quotedString) {
 	if (quotedString == NULL) return NULL;
 	
@@ -51,12 +41,9 @@ static char * _removeQuotes(const char * quotedString) {
 	return result;
 }
 
-/**
- * Converts a string to BlockType enum.
- */
 static BlockType _stringToBlockType(const char * blockTypeStr) {
 	char * cleanStr = _removeQuotes(blockTypeStr);
-	BlockType result = BLOCK_NORMAL; // default
+	BlockType result = BLOCK_NORMAL;
 	
 	if (strcmp(cleanStr, "alert") == 0) {
 		result = BLOCK_ALERT;
@@ -68,14 +55,10 @@ static BlockType _stringToBlockType(const char * blockTypeStr) {
 	return result;
 }
 
-/**
- * Logs a syntactic-analyzer action in DEBUGGING level.
- */
 static void _logSyntacticAnalyzerAction(const char * functionName) {
-	logDebugging(_logger, "%s", functionName);
+	(void)functionName;
 }
 
-/* PUBLIC FUNCTIONS */
 
 Text * TextSemanticAction(char * content) {
 	_logSyntacticAnalyzerAction(__FUNCTION__);
@@ -91,7 +74,7 @@ Image * ImageSemanticAction(char * path, char * caption) {
 	Image * image = calloc(1, sizeof(Image));
 	image->path = _removeQuotes(path);
 	image->caption = _removeQuotes(caption);
-	image->legend = NULL;  // No legend in basic image
+	image->legend = NULL;
 	return image;
 }
 
@@ -132,16 +115,13 @@ Link * LinkSemanticAction(char * text, char * target) {
 	Link * link = calloc(1, sizeof(Link));
 
 	if (text == target) {
-		/* Caso @link "X": usamos X como texto visible y también como destino (id o título). */
 		char * clean = _removeQuotes(text);
 		link->text = strdup(clean);
 		link->target = strdup(clean);
 		free(clean);
 	} else {
-		/* Caso @link "destino" "texto" en la gramática actual: el primer STRING es el destino y el segundo el texto.
-		 * La firma original asumía (texto, destino), así que invertimos aquí. */
-		char * cleanText = _removeQuotes(target);   /* segundo parámetro: texto visible */
-		char * cleanTarget = _removeQuotes(text);   /* primer parámetro: destino (id o título) */
+		char * cleanText = _removeQuotes(target);
+		char * cleanTarget = _removeQuotes(text);
 		link->text = cleanText;
 		link->target = cleanTarget;
 	}

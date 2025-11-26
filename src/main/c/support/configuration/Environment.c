@@ -1,6 +1,5 @@
 #include "Environment.h"
 
-/* PUBLIC FUNCTIONS */
 
 const bool getBooleanOrDefault(const char * name, const bool defaultValue) {
 	const char * value = getStringOrDefault(name, NULL);

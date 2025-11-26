@@ -1,16 +1,13 @@
 #include "FlexActions.h"
 
-/* MODULE INTERNAL STATE */
 
 static bool _logIgnoredLexemes = true;
 static InputBuffer * _inputBuffer = NULL;
 static LexicalAnalyzer * _lexicalAnalyzer = NULL;
 static Logger * _logger = NULL;
 
-/** Shutdown module's internal state. */
 void _shutdownFlexActionsModule() {
 	if (_logger != NULL) {
-		logDebugging(_logger, "Destroying module: FlexActions...");
 		destroyLogger(_logger);
 		_logger = NULL;
 	}
@@ -29,28 +26,13 @@ ModuleDestructor initializeFlexActionsModule(LexicalAnalyzer * lexicalAnalyzer) 
 	return _shutdownFlexActionsModule;
 }
 
-/* PRIVATE FUNCTIONS */
 
 static void _logTokenAction(const char * actionName, Token * token);
 
-/**
- * Logs a lexical-analyzer action over a token in DEBUGGING level.
- */
 static void _logTokenAction(const char * actionName, Token * token) {
-	char * _lexeme = escape(token->lexeme);
-	logDebugging(_logger, WARNING_COLOR "%s" DEFAULT_COLOR ": Token(context=%d, label=%d, length=%d, lexeme=%s\"%s\"%s, line=%d, semanticValue=%p)",
-		actionName,
-		token->context,
-		token->label,
-		token->length,
-		INFORMATION_COLOR, _lexeme, DEFAULT_COLOR,
-		token->line,
-		token->semanticValue);
-	free(_lexeme);
-	_lexeme = NULL;
+	(void)actionName; (void)token;
 }
 
-/* PUBLIC FUNCTIONS */
 
 CompilationStatus HashLexemeAction() {
 	Token * token = createToken(_lexicalAnalyzer, HASH);

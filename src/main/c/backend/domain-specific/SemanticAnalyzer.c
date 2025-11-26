@@ -1,14 +1,11 @@
 #include "SemanticAnalyzer.h"
 #include <string.h>
 
-/* MODULE INTERNAL STATE */
 
 static Logger * _logger = NULL;
 
-/** Shutdown del módulo. */
 static void _shutdownSemanticAnalyzerModule() {
     if (_logger != NULL) {
-        logDebugging(_logger, "Destroying module: SemanticAnalyzer...");
         destroyLogger(_logger);
         _logger = NULL;
     }
@@ -19,13 +16,11 @@ ModuleDestructor initializeSemanticAnalyzerModule() {
     return _shutdownSemanticAnalyzerModule;
 }
 
-/* PRIVATE HELPERS */
 
 static void _logSemanticAction(const char * name) {
-    logDebugging(_logger, "%s", name);
+    (void)name; 
 }
 
-/** Busca id en arreglo lineal. */
 static int _findId(char ** ids, int count, const char * id) {
     for (int k = 0; k < count; ++k) {
         if (strcmp(ids[k], id) == 0) return k;
@@ -33,7 +28,6 @@ static int _findId(char ** ids, int count, const char * id) {
     return -1;
 }
 
-/** Agrega id si no existe; retorna true si duplicado. */
 static bool _checkAndAddId(char *** idsRef, int * countRef, const char * id) {
     if (id == NULL) return false; // Nada que validar
     char ** ids = *idsRef; int count = *countRef;
@@ -41,20 +35,18 @@ static bool _checkAndAddId(char *** idsRef, int * countRef, const char * id) {
         return true; // duplicado
     }
     char ** resized = realloc(ids, sizeof(char*) * (count + 1));
-    if (resized == NULL) return false; // sin memoria, lo omitimos (se detectará luego si es crítico)
+    if (resized == NULL) return false; 
     resized[count] = strdup(id);
     *idsRef = resized;
     *countRef = count + 1;
     return false;
 }
 
-/** Libera arreglo de ids. */
 static void _freeIds(char ** ids, int count) {
     for (int k = 0; k < count; ++k) free(ids[k]);
     free(ids);
 }
 
-/** Valida items de un slide. */
 static void _validateSlideItems(Slide * slide, char *** pendingLinkTargetsRef, int * pendingCountRef, CompilerState * state) {
     SlideItem * item = slide->items ? slide->items->first : NULL;
     while (item != NULL) {
@@ -73,7 +65,6 @@ static void _validateSlideItems(Slide * slide, char *** pendingLinkTargetsRef, i
                     logError(_logger, "Link sin target definido.");
                     state->semanticErrors++;
                 } else {
-                    // Guardamos el target para validar después.
                     char ** arr = *pendingLinkTargetsRef; int n = *pendingCountRef;
                     char ** resized = realloc(arr, sizeof(char*) * (n + 1));
                     if (resized != NULL) {
@@ -89,20 +80,16 @@ static void _validateSlideItems(Slide * slide, char *** pendingLinkTargetsRef, i
             }
             case SLIDE_ITEM_BLOCK: {
                 Block * block = item->block;
-                /* Bloques especiales pueden no tener título (tests 7 aceptan example sin título). */
-                if (block->type != BLOCK_NORMAL && block->title == NULL) {
-                    logDebugging(_logger, "Bloque especial sin título permitido (tipo=%d).", (int)block->type);
-                }
+                (void)block;
                 break;
             }
             default:
-                break; // Otros tipos no tienen validaciones extra (por ahora)
+                break;
         }
         item = item->next;
     }
 }
 
-/** Valida que todos los link targets existan entre los ids de slides. */
 static void _validateLinkTargets(char ** slideIds, int slideIdCount, char ** slideTitles, int slideTitleCount, char ** targets, int targetCount, CompilerState * state) {
     for (int k = 0; k < targetCount; ++k) {
         if (_findId(slideIds, slideIdCount, targets[k]) < 0 && _findId(slideTitles, slideTitleCount, targets[k]) < 0) {
@@ -121,20 +108,13 @@ CompilationStatus executeSemanticAnalysis(CompilerState * compilerState) {
         return FAILED;
     }
 
-    // Estructuras auxiliares.
     char ** slideIds = NULL; int slideIdCount = 0;
     char ** slideTitles = NULL; int slideTitleCount = 0;
     char ** pendingLinkTargets = NULL; int pendingLinkCount = 0;
 
-    // Recorrido de slides.
     Slide * current = program->slides->first;
     int index = 0;
     while (current != NULL) {
-        // Validación de título opcional: solo log informativo si falta.
-        if (current->title == NULL) {
-            logDebugging(_logger, "Slide %d sin título (permitido).", index);
-        }
-        // Registrar título (para permitir links por título) e id (para links por id).
         if (current->title != NULL) {
             char ** resizedT = realloc(slideTitles, sizeof(char*) * (slideTitleCount + 1));
             if (resizedT != NULL) {
@@ -142,7 +122,6 @@ CompilationStatus executeSemanticAnalysis(CompilerState * compilerState) {
                 slideTitles = resizedT; slideTitleCount++;
             }
         }
-        // Id duplicado.
         if (current->id != NULL) {
             bool duplicated = _checkAndAddId(&slideIds, &slideIdCount, current->id);
             if (duplicated) {
@@ -150,12 +129,10 @@ CompilationStatus executeSemanticAnalysis(CompilerState * compilerState) {
                 compilerState->semanticErrors++;
             }
         }
-        // Validar items.
         _validateSlideItems(current, &pendingLinkTargets, &pendingLinkCount, compilerState);
         current = current->next; ++index;
     }
 
-    // Validar targets de links contra ids de slides.
     _validateLinkTargets(slideIds, slideIdCount, slideTitles, slideTitleCount, pendingLinkTargets, pendingLinkCount, compilerState);
 
     _freeIds(slideIds, slideIdCount);
@@ -166,6 +143,5 @@ CompilationStatus executeSemanticAnalysis(CompilerState * compilerState) {
         logError(_logger, "Errores semánticos: %d", compilerState->semanticErrors);
         return FAILED;
     }
-    logDebugging(_logger, "Análisis semántico OK.");
     return SUCCEEDED;
 }

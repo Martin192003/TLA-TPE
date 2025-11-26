@@ -12,7 +12,7 @@
 /** Inicializa el módulo de generación de código. */
 ModuleDestructor initializeGeneratorModule();
 
-/** Genera salida final (LaTeX o HTML) según env OUTPUT_FORMAT. */
+/** Genera salida final (LaTeX/Beamer). */
 void executeGenerator(CompilerState * compilerState);
 
 #endif

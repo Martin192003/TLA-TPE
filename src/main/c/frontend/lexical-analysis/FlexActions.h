@@ -12,7 +12,6 @@
 #include "../../support/type/TokenLabel.h"
 #include "../Frontend.h"
 
-/** Initialize module's internal state. */
 ModuleDestructor initializeFlexActionsModule(LexicalAnalyzer * lexicalAnalyzer);
 
 CompilationStatus HashLexemeAction();
