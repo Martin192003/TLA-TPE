@@ -57,6 +57,7 @@ extern CompilationStatus UnknownLexemeAction();
  */
 whitespace			[[:space:]]+
 string				\"[^\"]*\"
+string_content		[^\"]*
 text_content		[^\n\r]+
 
 %%

@@ -148,7 +148,15 @@ CompilationStatus BlockTypeLexemeAction(TokenLabel label) {
 
 CompilationStatus StringLexemeAction() {
 	Token * token = createToken(_lexicalAnalyzer, STRING);
-	token->semanticValue->string = strdup(token->lexeme);
+	size_t len = strlen(token->lexeme);
+	if (len >= 2) {
+		char * cleanString = (char *) malloc(len - 1); // len - 2 + 1 for null terminator
+		strncpy(cleanString, token->lexeme + 1, len - 2);
+		cleanString[len - 2] = '\0';
+		token->semanticValue->string = cleanString;
+	} else {
+		token->semanticValue->string = strdup("");
+	}
 	_logTokenAction(__FUNCTION__, token);
 	CompilationStatus status = pushToken(_lexicalAnalyzer, token);
 	destroyToken(token);

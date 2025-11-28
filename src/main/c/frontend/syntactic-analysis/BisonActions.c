@@ -20,41 +20,6 @@ ModuleDestructor initializeBisonActionsModule(CompilerState * compilerState) {
 }
 
 static void _logSyntacticAnalyzerAction(const char * functionName);
-static char * _removeQuotes(const char * quotedString);
-
-
-static char * _removeQuotes(const char * quotedString) {
-	if (quotedString == NULL) return NULL;
-	
-	int len = strlen(quotedString);
-	char * result;
-	
-	if (len >= 2 && quotedString[0] == '"' && quotedString[len-1] == '"') {
-		result = malloc(len - 1);
-		strncpy(result, quotedString + 1, len - 2);
-		result[len - 2] = '\0';
-	} else {
-		result = strdup(quotedString);
-	}
-	
-	free((char*)quotedString);
-	return result;
-}
-
-static BlockType _stringToBlockType(const char * blockTypeStr) {
-	char * cleanStr = _removeQuotes(blockTypeStr);
-	BlockType result = BLOCK_NORMAL;
-	
-	if (strcmp(cleanStr, "alert") == 0) {
-		result = BLOCK_ALERT;
-	} else if (strcmp(cleanStr, "example") == 0) {
-		result = BLOCK_EXAMPLE;
-	}
-	
-	free(cleanStr);
-	return result;
-}
-
 static void _logSyntacticAnalyzerAction(const char * functionName) {
 	(void)functionName;
 }
@@ -63,7 +28,7 @@ static void _logSyntacticAnalyzerAction(const char * functionName) {
 Text * TextSemanticAction(char * content) {
 	_logSyntacticAnalyzerAction(__FUNCTION__);
 	Text * text = calloc(1, sizeof(Text));
-	text->content = _removeQuotes(content);
+	text->content = content;
 	text->listType = LIST_NONE;
 	return text;
 }
@@ -72,8 +37,8 @@ Text * TextSemanticAction(char * content) {
 Image * ImageSemanticAction(char * path, char * caption) {
 	_logSyntacticAnalyzerAction(__FUNCTION__);
 	Image * image = calloc(1, sizeof(Image));
-	image->path = _removeQuotes(path);
-	image->caption = _removeQuotes(caption);
+	image->path = path;
+	image->caption = caption;
 	image->legend = NULL;
 	return image;
 }
@@ -81,23 +46,23 @@ Image * ImageSemanticAction(char * path, char * caption) {
 Image * ImageWithLegendSemanticAction(char * path, char * caption, char * legend) {
 	_logSyntacticAnalyzerAction(__FUNCTION__);
 	Image * image = calloc(1, sizeof(Image));
-	image->path = _removeQuotes(path);
-	image->caption = _removeQuotes(caption);
-	image->legend = _removeQuotes(legend);
+	image->path = path;
+	image->caption = caption;
+	image->legend = legend;
 	return image;
 }
 
 CodeBlock * CodeBlockSemanticAction(char * content) {
 	_logSyntacticAnalyzerAction(__FUNCTION__);
 	CodeBlock * codeBlock = calloc(1, sizeof(CodeBlock));
-	codeBlock->content = _removeQuotes(content);
+	codeBlock->content = content;
 	return codeBlock;
 }
 
 Note * NoteSemanticAction(char * content) {
 	_logSyntacticAnalyzerAction(__FUNCTION__);
 	Note * note = calloc(1, sizeof(Note));
-	note->content = _removeQuotes(content);
+	note->content = content;
 	return note;
 }
 
@@ -105,8 +70,8 @@ Block * BlockSemanticAction(BlockType type, char * title, char * content) {
 	_logSyntacticAnalyzerAction(__FUNCTION__);
 	Block * block = calloc(1, sizeof(Block));
 	block->type = type;
-	block->title = title ? _removeQuotes(title) : NULL;
-	block->content = _removeQuotes(content);
+	block->title = title; 
+	block->content = content; 
 	return block;
 }
 
@@ -115,15 +80,12 @@ Link * LinkSemanticAction(char * text, char * target) {
 	Link * link = calloc(1, sizeof(Link));
 
 	if (text == target) {
-		char * clean = _removeQuotes(text);
-		link->text = strdup(clean);
-		link->target = strdup(clean);
-		free(clean);
+		link->text = strdup(text);
+		link->target = strdup(text);
+		free(text);
 	} else {
-		char * cleanText = _removeQuotes(target);
-		char * cleanTarget = _removeQuotes(text);
-		link->text = cleanText;
-		link->target = cleanTarget;
+		link->text = target;
+		link->target = text;
 	}
 
 	return link;
@@ -206,8 +168,8 @@ SlideItemList * SlideItemListSemanticAction(SlideItemList * list, SlideItem * it
 Slide * SlideSemanticAction(char * title, char * subtitle, SlideItemList * items) {
 	_logSyntacticAnalyzerAction(__FUNCTION__);
 	Slide * slide = calloc(1, sizeof(Slide));
-	slide->title = _removeQuotes(title);
-	slide->subtitle = subtitle ? _removeQuotes(subtitle) : NULL;
+	slide->title = title; 
+	slide->subtitle = subtitle; 
 	slide->id = NULL;
 	slide->items = items;
 	slide->next = NULL;
@@ -217,7 +179,7 @@ Slide * SlideSemanticAction(char * title, char * subtitle, SlideItemList * items
 Slide * SimpleSlideSemanticAction(char * title, SlideItemList * items) {
 	_logSyntacticAnalyzerAction(__FUNCTION__);
 	Slide * slide = calloc(1, sizeof(Slide));
-	slide->title = _removeQuotes(title);
+	slide->title = title;
 	slide->subtitle = NULL;
 	slide->id = NULL;
 	slide->items = items;
@@ -239,9 +201,9 @@ Slide * SlideWithoutTitleSemanticAction(SlideItemList * items) {
 Slide * SlideWithIdSemanticAction(char * title, char * id, SlideItemList * items) {
 	_logSyntacticAnalyzerAction(__FUNCTION__);
 	Slide * slide = calloc(1, sizeof(Slide));
-	slide->title = _removeQuotes(title);
+	slide->title = title;
 	slide->subtitle = NULL;
-	slide->id = _removeQuotes(id);
+	slide->id = id;
 	slide->items = items;
 	slide->next = NULL;
 	return slide;
@@ -250,9 +212,9 @@ Slide * SlideWithIdSemanticAction(char * title, char * id, SlideItemList * items
 Slide * SlideWithSubtitleAndIdSemanticAction(char * title, char * subtitle, char * id, SlideItemList * items) {
 	_logSyntacticAnalyzerAction(__FUNCTION__);
 	Slide * slide = calloc(1, sizeof(Slide));
-	slide->title = _removeQuotes(title);
-	slide->subtitle = _removeQuotes(subtitle);
-	slide->id = _removeQuotes(id);
+	slide->title = title;
+	slide->subtitle = subtitle;
+	slide->id = id;
 	slide->items = items;
 	slide->next = NULL;
 	return slide;

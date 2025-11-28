@@ -52,6 +52,7 @@ void yyerror(const YYLTYPE * location, const char * message) {}
  *
  * @see https://www.gnu.org/software/bison/manual/html_node/Destructor-Decl.html
  */
+%destructor { if ($$) free($$); } STRING TEXT_CONTENT CODE_CONTENT
 %destructor { destroyText($$); } <text>
 %destructor { destroyImage($$); } <image>
 %destructor { destroyCodeBlock($$); } <codeBlock>
@@ -62,6 +63,13 @@ void yyerror(const YYLTYPE * location, const char * message) {}
 %destructor { destroySlideItemList($$); } slideItems
 %destructor { destroySlide($$); } <slide>
 %destructor { destroySlideList($$); } slides
+%destructor { if ($$) free($$); } imageLegend linkUrl blockTitle
+%destructor { destroySlideItemList($$); } nonEmptySlideItems
+%destructor { 
+	if ($$.subtitle) free($$.subtitle); 
+	if ($$.id) free($$.id); 
+} <slideExtras>
+%destructor { destroySlide($$); } slideWithTitle slideWithoutTitle
 
 /** Terminals. */
 %token <string> STRING
@@ -112,7 +120,7 @@ void yyerror(const YYLTYPE * location, const char * message) {}
 program: slides													{ $$ = ProgramSemanticAction($1); }
 	;
 
-slides: optionalSeparator slide									{ $$ = EmptySlideListSemanticAction(); $$ = SlideListSemanticAction($$, $2); }
+slides: optionalSeparator slide									{ $$ = SlideListSemanticAction(EmptySlideListSemanticAction(), $2); }
 	| slides slide												{ $$ = SlideListSemanticAction($1, $2); }
 	| slides TRIPLE_MINUS slide									{ $$ = SlideListSemanticAction($1, $3); }
 	;
