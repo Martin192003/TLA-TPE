@@ -41,6 +41,7 @@ void yyerror(const YYLTYPE * location, const char * message) {}
 	SlideList * slideList;
 	Program * program;
 	BlockType blockType;
+	SlideExtras slideExtras;
 }
 
 /**
@@ -97,10 +98,12 @@ void yyerror(const YYLTYPE * location, const char * message) {}
 %type <link> link
 %type <blockType> blockType
 %type <slideItem> slideItem
-%type <slideItemList> slideItems
-%type <slide> slide
+%type <slideItemList> slideItems nonEmptySlideItems
+%type <slide> slide slideWithTitle slideWithoutTitle
 %type <slideList> slides
 %type <program> program
+%type <slideExtras> slideExtras
+%type <string> imageLegend linkUrl blockTitle
 
 %%
 
@@ -109,20 +112,67 @@ void yyerror(const YYLTYPE * location, const char * message) {}
 program: slides													{ $$ = ProgramSemanticAction($1); }
 	;
 
-slides: slide													{ $$ = EmptySlideListSemanticAction(); $$ = SlideListSemanticAction($$, $1); }
+slides: optionalSeparator slide									{ $$ = EmptySlideListSemanticAction(); $$ = SlideListSemanticAction($$, $2); }
 	| slides slide												{ $$ = SlideListSemanticAction($1, $2); }
 	| slides TRIPLE_MINUS slide									{ $$ = SlideListSemanticAction($1, $3); }
 	;
 
-slide: HASH STRING slideItems									{ $$ = SimpleSlideSemanticAction($2, $3); }
-	| HASH STRING DOUBLE_HASH STRING slideItems				{ $$ = SlideSemanticAction($2, $4, $5); }
-	| HASH STRING AT_ID STRING slideItems					{ $$ = SlideWithIdSemanticAction($2, $4, $5); }
-	| HASH STRING DOUBLE_HASH STRING AT_ID STRING slideItems	{ $$ = SlideWithSubtitleAndIdSemanticAction($2, $4, $6, $7); }
-	| slideItems												{ $$ = SlideWithoutTitleSemanticAction($1); }
+optionalSeparator: %empty										{ /* No action needed */ }
+	| TRIPLE_MINUS												{ /* No action needed */ }
+	;
+
+slide: slideWithTitle											{ $$ = $1; }
+	| slideWithoutTitle											{ $$ = $1; }
+	;
+
+slideWithTitle: HASH STRING slideExtras slideItems				{
+																	if ($3.hasSubtitle && $3.hasId) {
+																		$$ = SlideWithSubtitleAndIdSemanticAction($2, $3.subtitle, $3.id, $4);
+																	} else if ($3.hasSubtitle) {
+																		$$ = SlideSemanticAction($2, $3.subtitle, $4);
+																	} else if ($3.hasId) {
+																		$$ = SlideWithIdSemanticAction($2, $3.id, $4);
+																	} else {
+																		$$ = SimpleSlideSemanticAction($2, $4);
+																	}
+																}
+	;
+
+slideWithoutTitle: nonEmptySlideItems							{ $$ = SlideWithoutTitleSemanticAction($1); }
+	;
+
+slideExtras: %empty												{
+																	$$.hasSubtitle = false;
+																	$$.hasId = false;
+																	$$.subtitle = NULL;
+																	$$.id = NULL;
+																}
+	| DOUBLE_HASH STRING										{
+																	$$.hasSubtitle = true;
+																	$$.hasId = false;
+																	$$.subtitle = $2;
+																	$$.id = NULL;
+																}
+	| AT_ID STRING												{
+																	$$.hasSubtitle = false;
+																	$$.hasId = true;
+																	$$.subtitle = NULL;
+																	$$.id = $2;
+																}
+	| DOUBLE_HASH STRING AT_ID STRING							{
+																	$$.hasSubtitle = true;
+																	$$.hasId = true;
+																	$$.subtitle = $2;
+																	$$.id = $4;
+																}
 	;
 
 slideItems: %empty												{ $$ = EmptySlideItemListSemanticAction(); }
 	| slideItems slideItem										{ $$ = SlideItemListSemanticAction($1, $2); }
+	;
+
+nonEmptySlideItems: slideItem									{ $$ = EmptySlideItemListSemanticAction(); $$ = SlideItemListSemanticAction($$, $1); }
+	| nonEmptySlideItems slideItem								{ $$ = SlideItemListSemanticAction($1, $2); }
 	;
 
 slideItem: text													{ $$ = TextSlideItemSemanticAction($1); }
@@ -137,8 +187,17 @@ text: MINUS TEXT_CONTENT										{ $$ = TextSemanticAction($2); $$->listType = 
 	| NUMBERED_LIST TEXT_CONTENT								{ $$ = TextSemanticAction($2); $$->listType = LIST_NUMBERED; }
 	;
 
-image: AT_IMG STRING STRING										{ $$ = ImageSemanticAction($2, $3); }
-	| AT_IMG STRING STRING STRING								{ $$ = ImageWithLegendSemanticAction($2, $3, $4); }
+image: AT_IMG STRING STRING imageLegend							{
+																	if ($4 != NULL) {
+																		$$ = ImageWithLegendSemanticAction($2, $3, $4);
+																	} else {
+																		$$ = ImageSemanticAction($2, $3);
+																	}
+																}
+	;
+
+imageLegend: %empty												{ $$ = NULL; }
+	| STRING													{ $$ = $1; }
 	;
 
 codeBlock: AT_CODE CODE_CONTENT AT_END							{ $$ = CodeBlockSemanticAction($2); }
@@ -147,12 +206,24 @@ codeBlock: AT_CODE CODE_CONTENT AT_END							{ $$ = CodeBlockSemanticAction($2);
 note: AT_NOTE STRING											{ $$ = NoteSemanticAction($2); }
 	;
 
-link: AT_LINK STRING											{ $$ = LinkSemanticAction($2, $2); }
-	| AT_LINK STRING STRING										{ $$ = LinkSemanticAction($2, $3); }
+link: AT_LINK STRING linkUrl									{
+																	if ($3 != NULL) {
+																		$$ = LinkSemanticAction($2, $3);
+																	} else {
+																		$$ = LinkSemanticAction($2, $2);
+																	}
+																}
 	;
 
-block: AT_BLOCK TIPO_EQUALS blockType STRING TEXT_CONTENT AT_END	{ $$ = BlockSemanticAction($3, $4, $5); }
-	| AT_BLOCK TIPO_EQUALS blockType TEXT_CONTENT AT_END			{ $$ = BlockSemanticAction($3, NULL, $4); }
+linkUrl: %empty													{ $$ = NULL; }
+	| STRING													{ $$ = $1; }
+	;
+
+block: AT_BLOCK TIPO_EQUALS blockType blockTitle TEXT_CONTENT AT_END	{ $$ = BlockSemanticAction($3, $4, $5); }
+	;
+
+blockTitle: %empty												{ $$ = NULL; }
+	| STRING													{ $$ = $1; }
 	;
 
 blockType: NORMAL												{ $$ = BLOCK_NORMAL; }

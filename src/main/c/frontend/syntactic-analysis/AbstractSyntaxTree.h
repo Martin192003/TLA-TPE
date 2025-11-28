@@ -4,6 +4,7 @@
 #include "../../support/logging/Logger.h"
 #include "../../support/type/ModuleDestructor.h"
 #include <stdlib.h>
+#include <stdbool.h>
 
 ModuleDestructor initializeAbstractSyntaxTreeModule();
 
@@ -21,6 +22,7 @@ typedef struct SlideItemList SlideItemList;
 typedef struct Slide Slide;
 typedef struct SlideList SlideList;
 typedef struct Program Program;
+typedef struct SlideExtras SlideExtras;
 
 enum SlideItemType {
 	SLIDE_ITEM_TEXT,
@@ -42,6 +44,13 @@ enum ListType {
     LIST_NONE,
     LIST_BULLET,
     LIST_NUMBERED
+};
+
+struct SlideExtras {
+	bool hasSubtitle;
+	bool hasId;
+	char * subtitle;
+	char * id;
 };
 
 struct Text {
